@@ -4,20 +4,20 @@ from ultralytics import YOLO
 from ultralytics.utils.plotting import Annotator, colors
 
 # 加载模型
-model = YOLO(r"C:\Yolo\YoloTrain\Module\1024\11x550\detect\train\weights\best.pt")
+model = YOLO(r"/Users/wfcy/Dev/Module/tht/1024/11x550/detect/train/weights/best.pt")
 names = model.names
 
 # 输入图像路径
-image_path = r"C:\Yolo\YoloTrain\Pic\9.png"
+image_path = r"/Users/wfcy/Dev/PycharmProj/YOLOTrain/Pic/13.png"
 im0 = cv2.imread(image_path)
 assert im0 is not None, "Error reading image file"
 
-# 创建保存裁剪图像的目录
-crop_dir_name = r"C:\Yolo\YoloTrain\CropTest"
+# 裁剪图像的目录
+crop_dir_name = r"/Users/wfcy/Dev/PycharmProj/YOLOTrain/CropTest"
 if not os.path.exists(crop_dir_name):
     os.mkdir(crop_dir_name)
 
-# 进行对象检测
+# 检测
 results = model.predict(im0, show=False)
 boxes = results[0].boxes.xyxy.cpu().tolist()
 clss = results[0].boxes.cls.cpu().tolist()
@@ -33,5 +33,5 @@ if boxes is not None:
         crop_obj = im0[int(box[1]): int(box[3]), int(box[0]): int(box[2])]
         cv2.imwrite(os.path.join(crop_dir_name, str(idx) + ".png"), crop_obj)
 
-cv2.waitKey(0)  # 按任意键关闭窗口
+cv2.waitKey(0)
 cv2.destroyAllWindows()

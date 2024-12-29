@@ -1,8 +1,8 @@
-﻿from ultralytics import YOLO
+﻿import cv2
+from ultralytics import YOLO
 
 if __name__ == '__main__':
-    Model = YOLO(r"C:\Yolo\YoloTrain\Module\1024\11x550\detect\train\weights\best.pt")
-    for i in range(20):
-        str1 = "C:/Yolo/YoloTrain/Pic/"
-        str2 = ".png"
-        Model.predict(str1 + str(i + 1) + str2, save=True, conf=0.05)
+    Model = YOLO(r"/Users/wfcy/Dev/Module/tht/1024/11x550/detect/train/weights/best.pt")
+
+    image_path = r"/Users/wfcy/Dev/PycharmProj/YOLOTrain/Pic/13.png"
+    Model.predict(image_path, save=True, conf=0.05)
