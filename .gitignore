@@ -1,0 +1,6 @@
+.venv
+.idea
+/DataSet/
+.DS_Store
+yolov8n.pt
+Pic/
