@@ -7,7 +7,7 @@
 
 if __name__ == '__main__':
     # YOLOV8
-    # done model = YOLO('yolov8n.pt')
+    model = YOLO('yolov8n.pt')
     # done model = YOLO('yolov8s.pt')
     # done model = YOLO('yolov8m.pt')
     # done model = YOLO('yolov8l.pt')
@@ -20,4 +20,4 @@ if __name__ == '__main__':
     # done model = YOLO('yolo11l.pt')
     # done model = YOLO('yolo11x.pt')
 
-    model.train(data="C:\\Yolo\\YoloTrain\\DataSet\\amon_pcb_inspection\\data.yaml", epochs = 1000, device = 0, workers = 4, batch = -1, imgsz = 1024)
+    model.train(data="/Users/wfcy/Dev/PycharmProj/YOLOTrain/DataSet/PCB_defect_detection/data.yaml", epochs = 1000, device = "mps", workers = 3, batch = -1, imgsz = 1024)
