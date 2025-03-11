@@ -5,3 +5,5 @@
 yolov8n.pt
 Pic/
 CropTest/
+APP/Module/
+APP/Picture/
