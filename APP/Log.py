@@ -2,7 +2,6 @@ from PySide6 import QtWidgets, QtGui, QtCore
 from pathlib import Path
 import time
 
-
 class Logger:
     def __init__(self, log_widget=None):
         self.log_widget = log_widget
@@ -42,7 +41,6 @@ class Logger:
         # 显示到GUI
         if self.log_widget:
             self.log_widget.append_log(log_entry, level)
-
 
 class LogWidget(QtWidgets.QTextBrowser):
     def __init__(self, parent=None):
