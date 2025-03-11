@@ -2,23 +2,21 @@ from PySide6 import QtWidgets, QtCore, QtGui
 import cv2
 from ultralytics import YOLO
 from pathlib import Path
-from Log import Logger, LogWidget
 
 class DetectionModePage1(QtWidgets.QWidget):
-    def __init__(self):
+    def __init__(self, logger):
         super().__init__()
         self.current_image = None
         self.model = None
         self.model_path = None
         self.result_image = None
+        self.logger = logger  # 使用外部传入的logger
 
         self.init_default_dirs()
         self.setupUI()
         self.setupConnections()
 
-        self.logger = Logger(self.log_widget)
-        self.log("检测模式一程序启动", "SUCCESS")
-        self.log(f"检测模式一日志文件路径：{self.logger.log_file}")
+        self.logger.log("检测模式一程序启动", "INFO")
 
     def init_default_dirs(self):
         Path("Picture").mkdir(parents=True, exist_ok=True)
@@ -43,13 +41,8 @@ class DetectionModePage1(QtWidgets.QWidget):
         controlLayout.addWidget(self.btn_detect)
         mainLayout.addLayout(controlLayout)
 
-        self.log_widget = LogWidget()
-        self.log_widget.setMaximumHeight(300)
-        mainLayout.addWidget(self.log_widget)
-
         mainLayout.setStretch(0, 3)
         mainLayout.setStretch(1, 1)
-        mainLayout.setStretch(2, 1)
 
     def createImageLabel(self, text):
         label = QtWidgets.QLabel(text, self)
@@ -92,9 +85,6 @@ class DetectionModePage1(QtWidgets.QWidget):
         self.btn_model.clicked.connect(self.selectModel)
         self.btn_detect.clicked.connect(self.detectImage)
 
-    def log(self, message, level="INFO"):
-        self.logger.log(message, level)
-
     def openImage(self):
         default_dir = str(Path("Picture").absolute())
         file_path, _ = QtWidgets.QFileDialog.getOpenFileName(
@@ -105,18 +95,18 @@ class DetectionModePage1(QtWidgets.QWidget):
 
         if file_path:
             try:
-                self.log(f"检测模式一尝试打开图片: {file_path}")
+                self.logger.log(f"检测模式一尝试打开图片: {file_path}")
                 self.current_image = cv2.imread(file_path)
                 if self.current_image is not None:
                     self.showImage(self.label_original, self.current_image)
                     self.label_result.clear()
                     self.label_result.setText("检测结果")
-                    self.log(f"检测模式一成功打开图片: {Path(file_path).name}")
+                    self.logger.log(f"检测模式一成功打开图片: {Path(file_path).name}")
                 else:
-                    self.log("检测模式一图片文件读取失败", "ERROR")
+                    self.logger.log("检测模式一图片文件读取失败", "ERROR")
                     QtWidgets.QMessageBox.critical(self, "检测模式一错误", "无法读取图片文件")
             except Exception as e:
-                self.log(f"检测模式一图片打开失败: {str(e)}", "ERROR")
+                self.logger.log(f"检测模式一图片打开失败: {str(e)}", "ERROR")
                 QtWidgets.QMessageBox.critical(self, "检测模式一错误", f"图片加载失败: {str(e)}")
 
     def selectModel(self):
@@ -129,7 +119,7 @@ class DetectionModePage1(QtWidgets.QWidget):
 
         if file_path:
             try:
-                self.log(f"检测模式一尝试加载模型: {file_path}")
+                self.logger.log(f"检测模式一尝试加载模型: {file_path}")
                 self.model = None
                 self.label_original.clear()
                 self.label_result.clear()
@@ -138,13 +128,13 @@ class DetectionModePage1(QtWidgets.QWidget):
                 self.model = YOLO(file_path)
                 self.model_path = Path(file_path).name
                 self.btn_model.setText(f"模型: {self.model_path}")
-                self.log(f"检测模式一成功加载模型: {self.model_path}", "SUCCESS")
+                self.logger.log(f"检测模式一成功加载模型: {self.model_path}", "SUCCESS")
                 QtWidgets.QMessageBox.information(
                     self, "检测模式一模型加载",
                     f"成功加载模型: {self.model_path}"
                 )
             except Exception as e:
-                self.log(f"检测模式一模型加载失败: {str(e)}", "ERROR")
+                self.logger.log(f"检测模式一模型加载失败: {str(e)}", "ERROR")
                 QtWidgets.QMessageBox.critical(
                     self, "检测模式一错误",
                     f"模型加载失败: {str(e)}"
@@ -153,26 +143,26 @@ class DetectionModePage1(QtWidgets.QWidget):
 
     def detectImage(self):
         if self.current_image is None:
-            self.log("检测模式一未选择图片", "WARNING")
+            self.logger.log("检测模式一未选择图片", "WARNING")
             QtWidgets.QMessageBox.warning(self, "检测模式一警告", "请先打开图片")
             return
 
         if self.model is None:
-            self.log("检测模式一未选择模型", "WARNING")
+            self.logger.log("检测模式一未选择模型", "WARNING")
             QtWidgets.QMessageBox.warning(self, "检测模式一警告", "请先选择模型")
             return
 
         try:
-            self.log("检测模式一开始图片检测...")
+            self.logger.log("检测模式一开始图片检测...")
             self.label_result.clear()
 
             results = self.model(self.current_image)[0]
             self.result_image = results.plot(line_width=2)
             self.showImage(self.label_result, self.result_image)
-            self.log("检测模式一图片检测完成", "SUCCESS")
+            self.logger.log("检测模式一图片检测完成", "SUCCESS")
 
         except Exception as e:
-            self.log(f"检测模式一检测失败: {str(e)}", "ERROR")
+            self.logger.log(f"检测模式一检测失败: {str(e)}", "ERROR")
             QtWidgets.QMessageBox.critical(
                 self, "检测模式一错误",
                 f"检测失败: {str(e)}"
@@ -202,4 +192,4 @@ class DetectionModePage1(QtWidgets.QWidget):
             )
             label.setPixmap(scaled_pixmap)
         except Exception as e:
-            self.log(f"检测模式一图片显示失败: {str(e)}", "ERROR")
+            self.logger.log(f"检测模式一图片显示失败: {str(e)}", "ERROR")
