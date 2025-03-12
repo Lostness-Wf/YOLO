@@ -93,7 +93,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.addDockWidget(QtCore.Qt.DockWidgetArea.BottomDockWidgetArea, log_dock)
 
         # 创建输出窗口
-        self.output_window = OutputWindow()
+        self.output_window = OutputWindow(self.logger)
         output_dock = QtWidgets.QDockWidget("检测结果", self)
         output_dock.setWidget(self.output_window)
         self.addDockWidget(QtCore.Qt.DockWidgetArea.RightDockWidgetArea, output_dock)

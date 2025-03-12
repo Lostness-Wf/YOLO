@@ -1,9 +1,10 @@
 from PySide6 import QtWidgets, QtCore, QtGui
 
 class OutputWindow(QtWidgets.QWidget):
-    def __init__(self):
+    def __init__(self, logger=None):
         super().__init__()
         self.current_id = 1
+        self.logger = logger
         self.setup_ui()
 
     def setup_ui(self):
@@ -96,3 +97,5 @@ class OutputWindow(QtWidgets.QWidget):
     def clear_results(self):
         self.table.setRowCount(0)
         self.current_id = 1
+        if self.logger:
+            self.logger.log("清空检测结果", "WARNING")

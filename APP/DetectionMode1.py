@@ -157,8 +157,9 @@ class DetectionModePage1(QtWidgets.QWidget):
             return
 
         try:
-            self.logger.log("检测模式一开始图片检测...")
+            self.logger.log("检测模式一开始图片检测...", "INFO")
             if self.output_window:
+                self.logger.log("检测模式一开始检测，清空检测结果", "WARNING")
                 self.output_window.clear_results()
 
             results = self.model(self.current_image)[0]
