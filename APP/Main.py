@@ -1,7 +1,8 @@
 from PySide6 import QtWidgets, QtCore, QtGui
-from detection_mode_page1 import DetectionModePage1
-from detection_mode_page2 import DetectionModePage2
-from Log import Logger, LogWidget
+from DetectionMode1 import DetectionModePage1
+from DetectionMode2 import DetectionModePage2
+from LogWindow import Logger, LogWidget
+from OutputWindow import OutputWindow
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
@@ -90,6 +91,20 @@ class MainWindow(QtWidgets.QMainWindow):
         log_dock = QtWidgets.QDockWidget("系统日志", self)
         log_dock.setWidget(self.log_widget)
         self.addDockWidget(QtCore.Qt.DockWidgetArea.BottomDockWidgetArea, log_dock)
+
+        # 创建输出窗口
+        self.output_window = OutputWindow()
+        output_dock = QtWidgets.QDockWidget("检测结果", self)
+        output_dock.setWidget(self.output_window)
+        self.addDockWidget(QtCore.Qt.DockWidgetArea.RightDockWidgetArea, output_dock)
+
+        # 设置日志和输出窗口的布局
+        self.splitDockWidget(log_dock, output_dock, QtCore.Qt.Orientation.Horizontal)
+
+        # 将输出窗口引用传递给检测页面
+        for page in self.pages:
+            if hasattr(page, 'set_output_window'):
+                page.set_output_window(self.output_window)
 
         # 初始化选中状态
         self.nav_buttons[0].setChecked(True)
