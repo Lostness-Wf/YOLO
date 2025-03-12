@@ -1,4 +1,4 @@
-from PySide6 import QtWidgets, QtGui, QtCore
+from PySide6 import QtWidgets, QtGui
 from pathlib import Path
 import time
 
@@ -70,7 +70,7 @@ class LogWidget(QtWidgets.QTextBrowser):
         }
 
         cursor = self.textCursor()
-        cursor.movePosition(QtGui.QTextCursor.End)
+        cursor.movePosition(QtGui.QTextCursor.MoveOperation.End)
 
         # 添加带颜色的文本
         text_format = QtGui.QTextCharFormat()

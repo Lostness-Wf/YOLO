@@ -179,19 +179,19 @@ class DetectionModePage2(QtWidgets.QWidget):
                 h, w, ch = image.shape
                 q_img = QtGui.QImage(
                     image.data, w, h, ch * w,
-                    QtGui.QImage.Format_BGR888
+                    QtGui.QImage.Format.Format_BGR888
                 )
             else:
                 h, w = image.shape
                 q_img = QtGui.QImage(
                     image.data, w, h, w,
-                    QtGui.QImage.Format_Grayscale8
+                    QtGui.QImage.Format.Format_Grayscale8
                 )
 
             scaled_pixmap = QtGui.QPixmap.fromImage(q_img).scaled(
                 label.width(), label.height(),
-                QtCore.Qt.KeepAspectRatio,
-                QtCore.Qt.SmoothTransformation
+                QtCore.Qt.AspectRatioMode.KeepAspectRatio,
+                QtCore.Qt.TransformationMode.SmoothTransformation
             )
             label.setPixmap(scaled_pixmap)
         except Exception as e:

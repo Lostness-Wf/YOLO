@@ -56,7 +56,10 @@ class MainWindow(QtWidgets.QMainWindow):
                 border-radius: 4px;
             }
         """)
-        nav_layout.addWidget(self.toggle_btn, alignment=QtCore.Qt.AlignCenter)
+        nav_layout.addWidget(
+            self.toggle_btn,
+            alignment=QtCore.Qt.AlignmentFlag.AlignLeft
+        )
 
         # 导航按钮
         self.nav_buttons = [
@@ -86,9 +89,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # 底部日志区域
         log_dock = QtWidgets.QDockWidget("系统日志", self)
         log_dock.setWidget(self.log_widget)
-        log_dock.setFeatures(QtWidgets.QDockWidget.DockWidgetMovable |
-                             QtWidgets.QDockWidget.DockWidgetFloatable)
-        self.addDockWidget(QtCore.Qt.BottomDockWidgetArea, log_dock)
+        self.addDockWidget(QtCore.Qt.DockWidgetArea.BottomDockWidgetArea, log_dock)
 
         # 初始化选中状态
         self.nav_buttons[0].setChecked(True)
@@ -100,7 +101,7 @@ class MainWindow(QtWidgets.QMainWindow):
         btn.setIconSize(QtCore.QSize(40, 40))
         btn.setCheckable(True)
         # 初始设置为图标模式
-        btn.setToolButtonStyle(QtCore.Qt.ToolButtonIconOnly)
+        btn.setToolButtonStyle(QtCore.Qt.ToolButtonStyle.ToolButtonIconOnly)
         btn.setFixedSize(60, 60)  # 初始收缩状态尺寸
         # 添加样式确保文本显示
         btn.setStyleSheet("""
@@ -125,7 +126,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def toggle_navigation(self):
         animation = QtCore.QPropertyAnimation(self.nav_container, b"minimumWidth")
         animation.setDuration(200)
-        animation.setEasingCurve(QtCore.QEasingCurve.InOutQuad)
+        animation.setEasingCurve(QtCore.QEasingCurve.Type.InOutQuad)
 
         # 修正目标宽度计算逻辑
         target_width = self.nav_width_expanded if self.is_nav_collapsed else self.nav_width_collapsed
@@ -144,11 +145,11 @@ class MainWindow(QtWidgets.QMainWindow):
         # 更新导航按钮样式
         if self.is_nav_collapsed:
             for btn in self.nav_buttons:
-                btn.setToolButtonStyle(QtCore.Qt.ToolButtonTextBesideIcon)
+                btn.setToolButtonStyle(QtCore.Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
                 btn.setFixedSize(150, 60)
         else:
             for btn in self.nav_buttons:
-                btn.setToolButtonStyle(QtCore.Qt.ToolButtonIconOnly)
+                btn.setToolButtonStyle(QtCore.Qt.ToolButtonStyle.ToolButtonIconOnly)
                 btn.setFixedSize(60, 60)
 
         # 更新状态标志
