@@ -12,39 +12,21 @@ class OutputWindow(QtWidgets.QWidget):
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
 
-        # 顶部工具栏
-        toolbar = QtWidgets.QWidget()
-        toolbar_layout = QtWidgets.QHBoxLayout(toolbar)
-        toolbar_layout.setContentsMargins(5, 2, 5, 2)
-
-        # 清除按钮
-        self.btn_clear = QtWidgets.QPushButton()
-        self.btn_clear.setIcon(QtGui.QIcon("Icons/clear.svg"))
-        self.btn_clear.setFixedSize(24, 24)
-        self.btn_clear.setToolTip("清空结果")
-        self.btn_clear.clicked.connect(self.clear_results)
-        self.btn_clear.setStyleSheet("""
-            QPushButton {
-                border: none;
-                background-color: transparent;
-            }
-            QPushButton:hover {
-                background-color: #E0E0E0;
-                border-radius: 4px;
-            }
-        """)
-        toolbar_layout.addStretch()
-        toolbar_layout.addWidget(self.btn_clear)
-
         # 表格
         self.table = QtWidgets.QTableWidget()
         self.table.setColumnCount(5)
         self.table.setHorizontalHeaderLabels(["编号", "坐标", "类名", "置信度", "测试"])
-        self.table.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
-        self.table.verticalHeader().setVisible(False)
-        self.table.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
 
-        # 设置样式
+        self.table.horizontalHeader().setSectionResizeMode(
+            QtWidgets.QHeaderView.ResizeMode.Stretch
+        )
+        self.table.verticalHeader().setVisible(False)
+        self.table.setEditTriggers(
+            QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers
+        )
+
+        self._setup_floating_button()
+
         self.table.setStyleSheet("""
             QTableWidget {
                 border: 1px solid #E0E0E0;
@@ -61,14 +43,49 @@ class OutputWindow(QtWidgets.QWidget):
             }
         """)
 
-        # 组合布局
-        main_layout.addWidget(toolbar)
         main_layout.addWidget(self.table)
 
-    def add_detection_result(self, coords, class_name, confidence, test_text = "测试"):
+    def _setup_floating_button(self):
+        # 创建悬浮按钮
+        self.btn_float = QtWidgets.QPushButton(self.table)
+        self.btn_float.setIcon(QtGui.QIcon("Icons/clear.svg"))
+        self.btn_float.setFixedSize(24, 24)
+        self.btn_float.setToolTip("清空结果")
+        self.btn_float.clicked.connect(self.clear_results)
+
+        # 设置按钮样式
+        self.btn_float.setStyleSheet("""
+            QPushButton {
+                border: none;
+                background-color: transparent;
+            }
+            QPushButton:hover {
+                background-color: #E0E0E0;
+                border-radius: 4px;
+            }
+        """)
+
+        # 初始定位
+        self._position_button()
+
+        # 绑定尺寸变化事件
+        self.table.horizontalHeader().geometriesChanged.connect(self._position_button)
+        self.table.verticalScrollBar().valueChanged.connect(self._position_button)
+
+    def _position_button(self):
+        """动态计算按钮位置"""
+        # 获取标题栏高度
+        header_height = self.table.horizontalHeader().height()
+        # 计算X坐标（左边距4px）
+        x_pos = 4
+        # 计算Y坐标（垂直居中）
+        y_pos = (header_height - self.btn_float.height()) // 2
+        # 应用位置
+        self.btn_float.move(x_pos, y_pos)
+
+    def add_detection_result(self, coords, class_name, confidence, test_text="测试"):
         row = self.table.rowCount()
         self.table.insertRow(row)
-
         self.table.setItem(row, 0, QtWidgets.QTableWidgetItem(str(self.current_id)))
         self.table.setItem(row, 1, QtWidgets.QTableWidgetItem(f"({coords[0]:.1f}, {coords[1]:.1f})"))
         self.table.setItem(row, 2, QtWidgets.QTableWidgetItem(class_name))
