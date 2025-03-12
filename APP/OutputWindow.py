@@ -1,11 +1,58 @@
+from pathlib import Path
 from PySide6 import QtWidgets, QtCore, QtGui
+import csv
 
 class OutputWindow(QtWidgets.QWidget):
     def __init__(self, logger=None):
         super().__init__()
         self.current_id = 1
         self.logger = logger
+        self.csv_dir = Path("DetectResult")
         self.setup_ui()
+        self.create_result_dir()
+
+    def create_result_dir(self):
+        """创建结果保存目录"""
+        try:
+            self.csv_dir.mkdir(parents=True, exist_ok=True)
+        except Exception as e:
+            if self.logger:
+                self.logger.log(f"创建结果目录失败: {str(e)}", "ERROR")
+
+    def get_next_csvfile(self):
+        """获取下一个可用的CSV文件名"""
+        index = 1
+        while True:
+            csv_path = self.csv_dir / f"DetectResult{index}.csv"
+            if not csv_path.exists():
+                return csv_path
+            index += 1
+
+    def save_to_csv(self):
+        """保存表格数据到CSV文件"""
+        try:
+            csv_file = self.get_next_csvfile()
+            with open(csv_file, 'w', newline='', encoding='utf-8') as f:
+                writer = csv.writer(f)
+
+                # 写入标题行
+                headers = [self.table.horizontalHeaderItem(i).text()
+                           for i in range(self.table.columnCount())]
+                writer.writerow(headers)
+
+                # 写入数据行
+                for row in range(self.table.rowCount()):
+                    row_data = [
+                        self.table.item(row, col).text()
+                        for col in range(self.table.columnCount())
+                    ]
+                    writer.writerow(row_data)
+
+            if self.logger:
+                self.logger.log(f"检测结果已保存到: {csv_file.name}", "SUCCESS")
+        except Exception as e:
+            if self.logger:
+                self.logger.log(f"保存CSV失败: {str(e)}", "ERROR")
 
     def setup_ui(self):
         # 主布局
@@ -16,7 +63,7 @@ class OutputWindow(QtWidgets.QWidget):
         # 表格
         self.table = QtWidgets.QTableWidget()
         self.table.setColumnCount(5)
-        self.table.setHorizontalHeaderLabels(["编号", "坐标", "类名", "置信度", "测试"])
+        self.table.setHorizontalHeaderLabels(["编号", "坐标", "类名", "置信度", "电阻阻值"])
 
         self.table.horizontalHeader().setSectionResizeMode(
             QtWidgets.QHeaderView.ResizeMode.Stretch

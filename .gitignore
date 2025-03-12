@@ -7,4 +7,5 @@ Pic/
 CropTest/
 APP/Module/
 APP/Picture/
-Log/
+APP/Log/
+APP/DetectResult/
