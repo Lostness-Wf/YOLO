@@ -10,6 +10,32 @@ class OutputWindow(QtWidgets.QWidget):
         self.csv_dir = Path("DetectResult")
         self.setup_ui()
         self.create_result_dir()
+        self.table.itemSelectionChanged.connect(self.handle_selection_changed)
+        self.selected_rows = set()
+
+    def handle_selection_changed(self):
+        self.selected_rows = {item.row() for item in self.table.selectedItems()}
+        self.trigger_redraw()
+
+        # 获取选中的物体编号（从1开始）
+        selected_ids = self.get_selected_ids()
+        log_msg = f"获取选中物体编号: {', '.join(map(str, selected_ids))}"
+        self.logger.log(log_msg, "INFO")
+
+    def trigger_redraw(self):
+        """触发检测页面重绘"""
+        if hasattr(self, 'main_window'):  # 需要先在MainWindow中建立关联
+            for page in self.main_window.pages:
+                if page.result_image is not None:
+                    page.showImage(page.label_result, page.result_image)
+
+    def get_selected_ids(self):
+        """获取选中的物体编号列表（从1开始）"""
+        return [
+            int(self.table.item(row, 0).text())
+            for row in self.selected_rows
+            if row < self.table.rowCount()
+        ]
 
     def create_result_dir(self):
         """创建结果保存目录"""

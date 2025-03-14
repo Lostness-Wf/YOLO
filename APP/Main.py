@@ -97,6 +97,7 @@ class MainWindow(QtWidgets.QMainWindow):
         output_dock = QtWidgets.QDockWidget("检测结果", self)
         output_dock.setWidget(self.output_window)
         self.addDockWidget(QtCore.Qt.DockWidgetArea.RightDockWidgetArea, output_dock)
+        self.output_window.main_window = self
 
         # 设置日志和输出窗口的布局
         self.splitDockWidget(log_dock, output_dock, QtCore.Qt.Orientation.Horizontal)
