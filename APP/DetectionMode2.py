@@ -1,7 +1,9 @@
 from PySide6 import QtWidgets, QtCore, QtGui
 import cv2
+import copy
 from ultralytics import YOLO
 from pathlib import Path
+
 
 class DetectionModePage2(QtWidgets.QWidget):
     def __init__(self, logger):
@@ -9,14 +11,14 @@ class DetectionModePage2(QtWidgets.QWidget):
         self.current_image = None
         self.model = None
         self.model_path = None
-        self.result_image = None
-        self.logger = logger  # 使用外部传入的logger
+        self.base_result_image = None  # 存储基础检测图
+        self.results = None  # 存储检测结果对象
+        self.logger = logger
         self.output_window = None
 
         self.init_default_dirs()
         self.setupUI()
         self.setupConnections()
-
         self.logger.log("检测模式二程序启动", "INFO")
 
     def init_default_dirs(self):
@@ -109,6 +111,9 @@ class DetectionModePage2(QtWidgets.QWidget):
                     self.label_result.clear()
                     self.label_result.setText("检测结果")
                     self.logger.log(f"检测模式二成功打开图片: {Path(file_path).name}")
+                    # 清空相关缓存
+                    self.base_result_image = None
+                    self.results = None
                 else:
                     self.logger.log("检测模式二图片文件读取失败", "ERROR")
                     QtWidgets.QMessageBox.critical(self, "检测模式二错误", "无法读取图片文件")
@@ -131,6 +136,8 @@ class DetectionModePage2(QtWidgets.QWidget):
                 self.label_original.clear()
                 self.label_result.clear()
                 self.current_image = None
+                self.base_result_image = None
+                self.results = None
 
                 self.model = YOLO(file_path)
                 self.model_path = Path(file_path).name
@@ -162,15 +169,18 @@ class DetectionModePage2(QtWidgets.QWidget):
         try:
             self.logger.log("检测模式二开始图片检测...", "INFO")
             if self.output_window:
-                self.logger.log("检测模式二开始检测，清空检测结果", "WARNING")
                 self.output_window.clear_results()
 
-            results = self.model(self.current_image)[0]
-            self.result_image = results.plot(line_width=2)
-            self.showImage(self.label_result, self.result_image)
+            # 执行检测并存储基础结果
+            self.results = self.model(self.current_image)[0]
+            self.base_result_image = self.results.plot(line_width=2).copy()
 
-            if self.output_window and results.boxes:
-                for box in results.boxes:
+            # 初始显示
+            self.showImage(self.label_result, self.base_result_image)
+
+            # 填充检测结果到表格
+            if self.output_window and self.results.boxes:
+                for box in self.results.boxes:
                     xyxy = box.xyxy[0].cpu().numpy()
                     class_id = int(box.cls)
                     class_name = self.model.names[class_id]
@@ -185,10 +195,6 @@ class DetectionModePage2(QtWidgets.QWidget):
 
             self.logger.log("检测模式二图片检测完成", "SUCCESS")
 
-            # 保存结果到 CSV
-            if self.output_window and self.output_window.table.rowCount() > 0:
-                self.output_window.save_to_csv()
-
         except Exception as e:
             self.logger.log(f"检测模式二检测失败: {str(e)}", "ERROR")
             QtWidgets.QMessageBox.critical(
@@ -198,27 +204,43 @@ class DetectionModePage2(QtWidgets.QWidget):
 
     def showImage(self, label, image):
         try:
+            if image is None:
+                label.clear()
+                return
+
+            # 深拷贝基础图像用于绘制
+            display_image = copy.deepcopy(image)
+
+            # 动态绘制选中框
+            if self.results and self.results.boxes and self.output_window:
+                selected_ids = self.output_window.get_selected_ids()
+
+                for idx, box in enumerate(self.results.boxes, start=1):
+                    if idx in selected_ids:
+                        xyxy = box.xyxy[0].cpu().numpy().astype(int)
+                        cv2.rectangle(
+                            display_image,
+                            (xyxy[0], xyxy[1]),
+                            (xyxy[2], xyxy[3]),
+                            color=(0, 0, 255),  # 红色
+                            thickness=10  # 加粗线宽
+                        )
+
+            # 转换为QPixmap显示
             label.clear()
-
-            if len(image.shape) == 3:
-                h, w, ch = image.shape
-                q_img = QtGui.QImage(
-                    image.data, w, h, ch * w,
-                    QtGui.QImage.Format.Format_BGR888
-                )
-            else:
-                h, w = image.shape
-                q_img = QtGui.QImage(
-                    image.data, w, h, w,
-                    QtGui.QImage.Format.Format_Grayscale8
-                )
-
+            h, w, ch = display_image.shape
+            bytes_per_line = ch * w
+            q_img = QtGui.QImage(
+                display_image.data, w, h, bytes_per_line,
+                QtGui.QImage.Format.Format_BGR888
+            )
             scaled_pixmap = QtGui.QPixmap.fromImage(q_img).scaled(
                 label.width(), label.height(),
                 QtCore.Qt.AspectRatioMode.KeepAspectRatio,
                 QtCore.Qt.TransformationMode.SmoothTransformation
             )
             label.setPixmap(scaled_pixmap)
+
         except Exception as e:
             self.logger.log(f"检测模式二图片显示失败: {str(e)}", "ERROR")
 

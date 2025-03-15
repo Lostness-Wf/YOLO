@@ -26,8 +26,7 @@ class OutputWindow(QtWidgets.QWidget):
         """触发检测页面重绘"""
         if hasattr(self, 'main_window'):  # 需要先在MainWindow中建立关联
             for page in self.main_window.pages:
-                if page.result_image is not None:
-                    page.showImage(page.label_result, page.result_image)
+                page.showImage(page.label_result, page.base_result_image)
 
     def get_selected_ids(self):
         """获取选中的物体编号列表（从1开始）"""
