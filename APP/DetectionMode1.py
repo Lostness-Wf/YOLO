@@ -111,6 +111,9 @@ class DetectionModePage1(QtWidgets.QWidget):
                     # 清空相关缓存
                     self.base_result_image = None
                     self.results = None
+                    if self.output_window:
+                        self.output_window.clear_results()
+
                 else:
                     self.logger.log("检测模式一图片文件读取失败", "ERROR")
                     QtWidgets.QMessageBox.critical(self, "检测模式一错误", "无法读取图片文件")
@@ -135,6 +138,8 @@ class DetectionModePage1(QtWidgets.QWidget):
                 self.current_image = None
                 self.base_result_image = None
                 self.results = None
+                if self.output_window:
+                    self.output_window.clear_results()
 
                 self.model = YOLO(file_path)
                 self.model_path = Path(file_path).name
@@ -174,9 +179,6 @@ class DetectionModePage1(QtWidgets.QWidget):
 
             # 初始显示
             self.showImage(self.label_result, self.base_result_image)
-
-            # 在填充结果前清空当前模式缓存
-            self.output_window.clear_results()
 
             # 填充检测结果到表格
             if self.output_window and self.results.boxes:
