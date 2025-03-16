@@ -1,4 +1,4 @@
-from PySide6 import QtWidgets, QtGui, QtCore
+from PySide6 import QtWidgets, QtGui
 from pathlib import Path
 import time
 
@@ -70,7 +70,7 @@ class LogWidget(QtWidgets.QTextBrowser):
         self.filter_combo.addItems(["ALL", "INFO", "WARNING", "ERROR", "SUCCESS"])
         self.filter_combo.setCurrentText("ALL")
         self.filter_combo.currentTextChanged.connect(self.on_filter_changed)
-        self.filter_combo.setFixedSize(100, 24)
+        self.filter_combo.setFixedSize(105, 24)
         self.update_combo_position()
 
     def resizeEvent(self, event):
@@ -113,9 +113,9 @@ class LogWidget(QtWidgets.QTextBrowser):
     def on_filter_changed(self, filter_text):
         """筛选条件变化时重新渲染日志"""
         self.current_filter = filter_text
-        self._refresh_display()
+        self.refresh_display()
 
-    def _refresh_display(self):
+    def refresh_display(self):
         """清空当前内容并重新渲染符合条件的日志"""
         self.clear()
         for entry in self.log_entries:

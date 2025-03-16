@@ -62,7 +62,7 @@ class DetectionModePage2(QtWidgets.QWidget):
         """创建图片显示标签"""
         label = QtWidgets.QLabel(text, self)
         label.setMinimumSize(600, 480)
-        label.setAlignment(QtCore.Qt.AlignCenter)
+        label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         label.setStyleSheet('''
             QLabel {
                 border: 2px solid #4A90E2;
