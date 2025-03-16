@@ -5,9 +5,10 @@ import csv
 class OutputWindow(QtWidgets.QWidget):
     def __init__(self, logger=None):
         super().__init__()
-        self.current_id = 1
         self.logger = logger
         self.csv_dir = Path("DetectResult")
+        self.mode_caches = {}  # 新增：模式缓存字典 {mode_id: [results]}
+        self.current_mode = 0  # 当前显示的模式
         self.setup_ui()
         self.create_result_dir()
         self.table.itemSelectionChanged.connect(self.handle_selection_changed)
@@ -16,17 +17,27 @@ class OutputWindow(QtWidgets.QWidget):
     def handle_selection_changed(self):
         self.selected_rows = {item.row() for item in self.table.selectedItems()}
         self.trigger_redraw()
-
-        # 获取选中的物体编号（从1开始）
         selected_ids = self.get_selected_ids()
         log_msg = f"获取选中物体编号: {', '.join(map(str, selected_ids))}"
         self.logger.log(log_msg, "INFO")
 
     def trigger_redraw(self):
-        """触发检测页面重绘"""
-        if hasattr(self, 'main_window'):  # 需要先在MainWindow中建立关联
+        if hasattr(self, 'main_window'):
             for page in self.main_window.pages:
                 page.showImage(page.label_result, page.base_result_image)
+
+    def switch_mode_cache(self, mode_id):
+        self.current_mode = mode_id
+        if mode_id not in self.mode_caches:
+            self.mode_caches[mode_id] = []
+        self.refresh_table()
+
+    def refresh_table(self):
+        self.table.setRowCount(0)
+        self.current_id = 1
+
+        for item in self.mode_caches.get(self.current_mode, []):
+            self._add_row_to_table(item)
 
     def get_selected_ids(self):
         """获取选中的物体编号列表（从1开始）"""
@@ -157,17 +168,32 @@ class OutputWindow(QtWidgets.QWidget):
         self.btn_float.move(x_pos, y_pos)
 
     def add_detection_result(self, coords, class_name, confidence, test_text="测试"):
+        if self.current_mode not in self.mode_caches:
+            self.mode_caches[self.current_mode] = []
+
+        self.mode_caches[self.current_mode].append({
+            "coords": coords,
+            "class": class_name,
+            "confidence": confidence,
+            "text": test_text
+        })
+
+        self.refresh_table()
+
+    def _add_row_to_table(self, data):
         row = self.table.rowCount()
         self.table.insertRow(row)
         self.table.setItem(row, 0, QtWidgets.QTableWidgetItem(str(self.current_id)))
-        self.table.setItem(row, 1, QtWidgets.QTableWidgetItem(f"({coords[0]:.1f}, {coords[1]:.1f})"))
-        self.table.setItem(row, 2, QtWidgets.QTableWidgetItem(class_name))
-        self.table.setItem(row, 3, QtWidgets.QTableWidgetItem(f"{confidence:.2f}"))
-        self.table.setItem(row, 4, QtWidgets.QTableWidgetItem(test_text))
+        self.table.setItem(row, 1, QtWidgets.QTableWidgetItem(f"({data['coords'][0]:.1f}, {data['coords'][1]:.1f})"))
+        self.table.setItem(row, 2, QtWidgets.QTableWidgetItem(data['class']))
+        self.table.setItem(row, 3, QtWidgets.QTableWidgetItem(f"{data['confidence']:.2f}"))
+        self.table.setItem(row, 4, QtWidgets.QTableWidgetItem(data['text']))
         self.current_id += 1
 
     def clear_results(self):
+        if self.current_mode in self.mode_caches:
+            self.mode_caches[self.current_mode].clear()
         self.table.setRowCount(0)
         self.current_id = 1
         if self.logger:
-            self.logger.log("清空检测结果", "WARNING")
+            self.logger.log(f"清空模式{self.current_mode}的检测结果", "WARNING")

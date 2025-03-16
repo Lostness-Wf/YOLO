@@ -175,6 +175,9 @@ class DetectionModePage1(QtWidgets.QWidget):
             # 初始显示
             self.showImage(self.label_result, self.base_result_image)
 
+            # 在填充结果前清空当前模式缓存
+            self.output_window.clear_results()
+
             # 填充检测结果到表格
             if self.output_window and self.results.boxes:
                 for box in self.results.boxes:
@@ -191,6 +194,10 @@ class DetectionModePage1(QtWidgets.QWidget):
                     )
 
             self.logger.log("检测模式一图片检测完成", "SUCCESS")
+
+            # 保存结果到 CSV
+            if self.output_window and self.output_window.table.rowCount() > 0:
+                self.output_window.save_to_csv()
 
         except Exception as e:
             self.logger.log(f"检测模式一检测失败: {str(e)}", "ERROR")
@@ -219,8 +226,8 @@ class DetectionModePage1(QtWidgets.QWidget):
                             display_image,
                             (xyxy[0], xyxy[1]),
                             (xyxy[2], xyxy[3]),
-                            color=(0, 0, 255),  # 红色
-                            thickness=10  # 加粗线宽
+                            color=(0, 255, 0),  # 红色
+                            thickness=15  # 加粗线宽
                         )
 
             # 转换为QPixmap显示

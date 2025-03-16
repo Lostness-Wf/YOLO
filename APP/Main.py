@@ -179,7 +179,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.stacked_widget.setCurrentIndex(index)
         for i, btn in enumerate(self.nav_buttons):
             btn.setChecked(i == index)
-
+        # 切换输出窗口缓存
+        self.output_window.switch_mode_cache(index)
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication([])
