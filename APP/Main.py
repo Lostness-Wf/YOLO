@@ -4,30 +4,32 @@ from DetectionMode2 import DetectionModePage2
 from LogWindow import Logger, LogWidget
 from OutputWindow import OutputWindow
 
+
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle('PCB缺陷检测（Designed by 卫福春阳）')
         self.resize(1400, 900)
 
-        # 创建全局日志系统
+        # 初始化日志系统
         self.log_widget = LogWidget()
         self.logger = Logger(self.log_widget)
 
-        # 导航栏相关属性
+        # 导航栏属性
         self.is_nav_collapsed = True
         self.nav_width_expanded = 150
         self.nav_width_collapsed = 60
 
-        self.init_ui()
-        self.logger.log("应用程序启动", "INFO")
+        self.initialize_interface()
+        self.logger.log("应用程序启动成功", "INFO")
 
-    def init_ui(self):
+    def initialize_interface(self):
+        """初始化主界面布局"""
         central_widget = QtWidgets.QWidget()
         self.setCentralWidget(central_widget)
         main_layout = QtWidgets.QHBoxLayout(central_widget)
 
-        # 左侧导航栏容器
+        # 左侧导航栏
         self.nav_container = QtWidgets.QWidget()
         self.nav_container.setFixedWidth(self.nav_width_collapsed)
         self.nav_container.setStyleSheet("""
@@ -57,24 +59,19 @@ class MainWindow(QtWidgets.QMainWindow):
                 border-radius: 4px;
             }
         """)
-        nav_layout.addWidget(
-            self.toggle_btn,
-            alignment=QtCore.Qt.AlignmentFlag.AlignLeft
-        )
+        nav_layout.addWidget(self.toggle_btn, alignment=QtCore.Qt.AlignmentFlag.AlignLeft)
 
         # 导航按钮
         self.nav_buttons = [
-            self.create_nav_button("    检测模式一", QtGui.QIcon("Icons/mode1.svg"), 0),
-            self.create_nav_button("    （测试）", QtGui.QIcon("Icons/mode2.svg"), 1)
+            self.create_navigation_button("    检测模式一", QtGui.QIcon("Icons/mode1.svg"), 0),
+            self.create_navigation_button("    （测试）", QtGui.QIcon("Icons/mode2.svg"), 1)
         ]
-
-        # 添加导航按钮
         for btn in self.nav_buttons:
             nav_layout.addWidget(btn)
 
         nav_layout.addStretch()
 
-        # 页面区域
+        # 页面堆栈
         self.stacked_widget = QtWidgets.QStackedWidget()
         self.pages = [
             DetectionModePage1(self.logger),
@@ -92,17 +89,17 @@ class MainWindow(QtWidgets.QMainWindow):
         log_dock.setWidget(self.log_widget)
         self.addDockWidget(QtCore.Qt.DockWidgetArea.BottomDockWidgetArea, log_dock)
 
-        # 创建输出窗口
+        # 右侧输出窗口
         self.output_window = OutputWindow(self.logger)
         output_dock = QtWidgets.QDockWidget("检测结果", self)
         output_dock.setWidget(self.output_window)
         self.addDockWidget(QtCore.Qt.DockWidgetArea.RightDockWidgetArea, output_dock)
         self.output_window.main_window = self
 
-        # 设置日志和输出窗口的布局
+        # 窗口布局设置
         self.splitDockWidget(log_dock, output_dock, QtCore.Qt.Orientation.Horizontal)
 
-        # 将输出窗口引用传递给检测页面
+        # 传递输出窗口引用
         for page in self.pages:
             if hasattr(page, 'set_output_window'):
                 page.set_output_window(self.output_window)
@@ -110,16 +107,15 @@ class MainWindow(QtWidgets.QMainWindow):
         # 初始化选中状态
         self.nav_buttons[0].setChecked(True)
 
-    def create_nav_button(self, text, icon, index):
+    def create_navigation_button(self, text, icon, index):
+        """创建导航栏按钮"""
         btn = QtWidgets.QToolButton()
         btn.setText(text)
         btn.setIcon(icon)
         btn.setIconSize(QtCore.QSize(40, 40))
         btn.setCheckable(True)
-        # 初始设置为图标模式
         btn.setToolButtonStyle(QtCore.Qt.ToolButtonStyle.ToolButtonIconOnly)
-        btn.setFixedSize(60, 60)  # 初始收缩状态尺寸
-        # 添加样式确保文本显示
+        btn.setFixedSize(60, 60)
         btn.setStyleSheet("""
             QToolButton {
                 border: none;
@@ -136,29 +132,23 @@ class MainWindow(QtWidgets.QMainWindow):
                 background-color: #BBDEFB;
             }
         """)
-        btn.clicked.connect(lambda: self.change_tab(index))
+        btn.clicked.connect(lambda: self.switch_tab(index))
         return btn
 
     def toggle_navigation(self):
+        """切换导航栏展开/折叠状态"""
         animation = QtCore.QPropertyAnimation(self.nav_container, b"minimumWidth")
         animation.setDuration(200)
         animation.setEasingCurve(QtCore.QEasingCurve.Type.InOutQuad)
-
-        # 修正目标宽度计算逻辑
         target_width = self.nav_width_expanded if self.is_nav_collapsed else self.nav_width_collapsed
-
-        # 设置动画范围
         animation.setStartValue(self.nav_container.width())
         animation.setEndValue(target_width)
-
-        # 连接动画信号
         animation.valueChanged.connect(lambda: self.nav_container.setMinimumWidth(animation.currentValue()))
-        animation.finished.connect(self.on_animation_finished)
-
+        animation.finished.connect(self.handle_animation_finished)
         animation.start()
 
-    def on_animation_finished(self):
-        # 更新导航按钮样式
+    def handle_animation_finished(self):
+        """导航栏动画完成后的处理"""
         if self.is_nav_collapsed:
             for btn in self.nav_buttons:
                 btn.setToolButtonStyle(QtCore.Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
@@ -167,20 +157,17 @@ class MainWindow(QtWidgets.QMainWindow):
             for btn in self.nav_buttons:
                 btn.setToolButtonStyle(QtCore.Qt.ToolButtonStyle.ToolButtonIconOnly)
                 btn.setFixedSize(60, 60)
-
-        # 更新状态标志
         self.is_nav_collapsed = not self.is_nav_collapsed
-
-        # 强制刷新布局
         self.nav_container.updateGeometry()
         self.update()
 
-    def change_tab(self, index):
+    def switch_tab(self, index):
+        """切换功能页面"""
         self.stacked_widget.setCurrentIndex(index)
         for i, btn in enumerate(self.nav_buttons):
             btn.setChecked(i == index)
-        # 切换输出窗口缓存
         self.output_window.switch_mode_cache(index)
+
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication([])

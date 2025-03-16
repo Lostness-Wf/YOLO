@@ -17,40 +17,47 @@ class DetectionModePage1(QtWidgets.QWidget):
         self.output_window = None
 
         self.init_default_dirs()
-        self.setupUI()
-        self.setupConnections()
+        self.setup_ui()
+        self.setup_connections()
         self.logger.log("检测模式一程序启动", "INFO")
 
     def init_default_dirs(self):
+        """初始化默认存储目录"""
         Path("Picture").mkdir(parents=True, exist_ok=True)
         Path("Module").mkdir(parents=True, exist_ok=True)
 
     def set_output_window(self, output_window):
+        """设置输出窗口引用"""
         self.output_window = output_window
 
-    def setupUI(self):
-        mainLayout = QtWidgets.QVBoxLayout(self)
+    def setup_ui(self):
+        """初始化界面布局和组件"""
+        main_layout = QtWidgets.QVBoxLayout(self)
 
-        topLayout = QtWidgets.QHBoxLayout()
-        self.label_original = self.createImageLabel("原始图片")
-        self.label_result = self.createImageLabel("检测结果")
-        topLayout.addWidget(self.label_original)
-        topLayout.addWidget(self.label_result)
-        mainLayout.addLayout(topLayout)
+        # 顶部图片显示区域
+        top_layout = QtWidgets.QHBoxLayout()
+        self.label_original = self.create_image_label("原始图片")
+        self.label_result = self.create_image_label("检测结果")
+        top_layout.addWidget(self.label_original)
+        top_layout.addWidget(self.label_result)
+        main_layout.addLayout(top_layout)
 
-        controlLayout = QtWidgets.QHBoxLayout()
-        self.btn_open = self.createButton("📂 打开图片")
-        self.btn_model = self.createButton("⚙️ 选择模型")
-        self.btn_detect = self.createButton("🔍 开始检测")
-        controlLayout.addWidget(self.btn_open)
-        controlLayout.addWidget(self.btn_model)
-        controlLayout.addWidget(self.btn_detect)
-        mainLayout.addLayout(controlLayout)
+        # 控制按钮区域
+        control_layout = QtWidgets.QHBoxLayout()
+        self.btn_open = self.create_button("📂 打开图片")
+        self.btn_model = self.create_button("⚙️ 选择模型")
+        self.btn_detect = self.create_button("🔍 开始检测")
+        control_layout.addWidget(self.btn_open)
+        control_layout.addWidget(self.btn_model)
+        control_layout.addWidget(self.btn_detect)
+        main_layout.addLayout(control_layout)
 
-        mainLayout.setStretch(0, 3)
-        mainLayout.setStretch(1, 1)
+        # 设置布局比例
+        main_layout.setStretch(0, 3)
+        main_layout.setStretch(1, 1)
 
-    def createImageLabel(self, text):
+    def create_image_label(self, text):
+        """创建图片显示标签"""
         label = QtWidgets.QLabel(text, self)
         label.setMinimumSize(600, 480)
         label.setAlignment(QtCore.Qt.AlignCenter)
@@ -65,7 +72,8 @@ class DetectionModePage1(QtWidgets.QWidget):
         ''')
         return label
 
-    def createButton(self, text):
+    def create_button(self, text):
+        """创建统一风格的按钮"""
         button = QtWidgets.QPushButton(text)
         button.setStyleSheet('''
             QPushButton {
@@ -86,12 +94,14 @@ class DetectionModePage1(QtWidgets.QWidget):
         ''')
         return button
 
-    def setupConnections(self):
-        self.btn_open.clicked.connect(self.openImage)
-        self.btn_model.clicked.connect(self.selectModel)
-        self.btn_detect.clicked.connect(self.detectImage)
+    def setup_connections(self):
+        """连接按钮信号与槽函数"""
+        self.btn_open.clicked.connect(self.open_image)
+        self.btn_model.clicked.connect(self.select_model)
+        self.btn_detect.clicked.connect(self.detect_image)
 
-    def openImage(self):
+    def open_image(self):
+        """打开并显示原始图片"""
         default_dir = str(Path("Picture").absolute())
         file_path, _ = QtWidgets.QFileDialog.getOpenFileName(
             self, "检测模式一选择图片",
@@ -104,7 +114,7 @@ class DetectionModePage1(QtWidgets.QWidget):
                 self.logger.log(f"检测模式一尝试打开图片: {file_path}")
                 self.current_image = cv2.imread(file_path)
                 if self.current_image is not None:
-                    self.showImage(self.label_original, self.current_image)
+                    self.show_image(self.label_original, self.current_image)
                     self.label_result.clear()
                     self.label_result.setText("检测结果")
                     self.logger.log(f"检测模式一成功打开图片: {Path(file_path).name}")
@@ -113,7 +123,6 @@ class DetectionModePage1(QtWidgets.QWidget):
                     self.results = None
                     if self.output_window:
                         self.output_window.clear_results()
-
                 else:
                     self.logger.log("检测模式一图片文件读取失败", "ERROR")
                     QtWidgets.QMessageBox.critical(self, "检测模式一错误", "无法读取图片文件")
@@ -121,7 +130,8 @@ class DetectionModePage1(QtWidgets.QWidget):
                 self.logger.log(f"检测模式一图片打开失败: {str(e)}", "ERROR")
                 QtWidgets.QMessageBox.critical(self, "检测模式一错误", f"图片加载失败: {str(e)}")
 
-    def selectModel(self):
+    def select_model(self):
+        """选择并加载YOLO模型"""
         default_dir = str(Path("Module").absolute())
         file_path, _ = QtWidgets.QFileDialog.getOpenFileName(
             self, "检测模式一选择模型",
@@ -132,6 +142,7 @@ class DetectionModePage1(QtWidgets.QWidget):
         if file_path:
             try:
                 self.logger.log(f"检测模式一尝试加载模型: {file_path}")
+                # 清空现有状态
                 self.model = None
                 self.label_original.clear()
                 self.label_result.clear()
@@ -141,6 +152,7 @@ class DetectionModePage1(QtWidgets.QWidget):
                 if self.output_window:
                     self.output_window.clear_results()
 
+                # 加载新模型
                 self.model = YOLO(file_path)
                 self.model_path = Path(file_path).name
                 self.btn_model.setText(f"模型: {self.model_path}")
@@ -157,7 +169,8 @@ class DetectionModePage1(QtWidgets.QWidget):
                 )
                 self.btn_model.setText("⚙️ 选择模型")
 
-    def detectImage(self):
+    def detect_image(self):
+        """执行图像检测并显示结果"""
         if self.current_image is None:
             self.logger.log("检测模式一未选择图片", "WARNING")
             QtWidgets.QMessageBox.warning(self, "检测模式一警告", "请先打开图片")
@@ -173,14 +186,14 @@ class DetectionModePage1(QtWidgets.QWidget):
             if self.output_window:
                 self.output_window.clear_results()
 
-            # 执行检测并存储基础结果
+            # 执行YOLO检测
             self.results = self.model(self.current_image)[0]
             self.base_result_image = self.results.plot(line_width=2).copy()
 
-            # 初始显示
-            self.showImage(self.label_result, self.base_result_image)
+            # 显示检测结果
+            self.show_image(self.label_result, self.base_result_image)
 
-            # 填充检测结果到表格
+            # 填充检测结果到输出窗口
             if self.output_window and self.results.boxes:
                 for box in self.results.boxes:
                     xyxy = box.xyxy[0].cpu().numpy()
@@ -197,7 +210,7 @@ class DetectionModePage1(QtWidgets.QWidget):
 
             self.logger.log("检测模式一图片检测完成", "SUCCESS")
 
-            # 保存结果到 CSV
+            # 自动保存结果到CSV
             if self.output_window and self.output_window.table.rowCount() > 0:
                 self.output_window.save_to_csv()
 
@@ -208,7 +221,8 @@ class DetectionModePage1(QtWidgets.QWidget):
                 f"检测失败: {str(e)}"
             )
 
-    def showImage(self, label, image):
+    def show_image(self, label, image):
+        """在指定标签显示图像（支持选中框动态绘制）"""
         try:
             if image is None:
                 label.clear()
@@ -217,7 +231,7 @@ class DetectionModePage1(QtWidgets.QWidget):
             # 深拷贝基础图像用于绘制
             display_image = copy.deepcopy(image)
 
-            # 动态绘制选中框
+            # 动态绘制选中框（与输出窗口联动）
             if self.results and self.results.boxes and self.output_window:
                 selected_ids = self.output_window.get_selected_ids()
 
@@ -232,7 +246,7 @@ class DetectionModePage1(QtWidgets.QWidget):
                             thickness=15  # 加粗线宽
                         )
 
-            # 转换为QPixmap显示
+            # 转换为QPixmap并显示
             label.clear()
             h, w, ch = display_image.shape
             bytes_per_line = ch * w
