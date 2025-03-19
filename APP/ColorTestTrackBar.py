@@ -59,5 +59,5 @@ def color_adjustment(img_path):
 
 
 # 使用示例
-input_image = r"/Users/wfcy/Dev/PycharmProj/YOLOTrain/Pic/1.png"
+input_image = r"/Users/wfcy/Dev/PycharmProj/YOLOTrain/APP/Picture/3.jpg"
 color_adjustment(input_image)

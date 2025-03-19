@@ -4,16 +4,16 @@ from ultralytics import YOLO
 from ultralytics.utils.plotting import Annotator, colors
 
 # 加载模型
-model = YOLO(r"/Users/wfcy/Dev/Module/tht/1024/v8x130/detect/train/weights/best.pt")
+model = YOLO(r"/Users/wfcy/Dev/PycharmProj/YOLOTrain/APP/Module/THT_V8x.pt")
 names = model.names
 
 # 输入图像路径
-image_path = r"/Users/wfcy/Dev/PycharmProj/YOLOTrain/Pic/16.jpg"
+image_path = r"/Users/wfcy/Dev/PycharmProj/YOLOTrain/APP/Picture/25.jpg"
 im0 = cv2.imread(image_path)
 assert im0 is not None, "Error reading image file"
 
 # 裁剪图像的目录
-crop_dir_name = r"/Users/wfcy/Dev/PycharmProj/YOLOTrain/CropTest"
+crop_dir_name = r"/Users/wfcy/Dev/PycharmProj/YOLOTrain/APP/CropResult/"
 if not os.path.exists(crop_dir_name):
     os.mkdir(crop_dir_name)
 
