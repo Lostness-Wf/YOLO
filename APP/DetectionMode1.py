@@ -3,6 +3,7 @@ import cv2
 import copy
 from ultralytics import YOLO
 from pathlib import Path
+from THTAnnotationWindow import AnnotationWindow
 
 
 class DetectionModePage1(QtWidgets.QWidget):
@@ -44,9 +45,12 @@ class DetectionModePage1(QtWidgets.QWidget):
 
         # 控制按钮区域
         control_layout = QtWidgets.QHBoxLayout()
+        self.btn_annotate = self.create_button("📝 设置阻值")
         self.btn_open = self.create_button("📂 打开图片")
         self.btn_model = self.create_button("⚙️ 选择模型")
         self.btn_detect = self.create_button("🔍 开始检测")
+
+        control_layout.addWidget(self.btn_annotate)
         control_layout.addWidget(self.btn_open)
         control_layout.addWidget(self.btn_model)
         control_layout.addWidget(self.btn_detect)
@@ -96,9 +100,26 @@ class DetectionModePage1(QtWidgets.QWidget):
 
     def setup_connections(self):
         """连接按钮信号与槽函数"""
+        self.btn_annotate.clicked.connect(self.open_annotation_window)
         self.btn_open.clicked.connect(self.open_image)
         self.btn_model.clicked.connect(self.select_model)
         self.btn_detect.clicked.connect(self.detect_image)
+
+    def open_annotation_window(self):
+        """打开标注窗口"""
+        if not self.model:
+            QtWidgets.QMessageBox.warning(self, "警告", "请先选择模型！")
+            return
+        if self.current_image is None:
+            QtWidgets.QMessageBox.warning(self, "警告", "请先打开图片！")
+            return
+
+        try:
+            self.annot_window = AnnotationWindow(self.model, self.current_image, self.logger)
+            self.annot_window.exec()
+        except Exception as e:
+            self.logger.log(f"标注窗口打开失败: {str(e)}", "ERROR")
+            QtWidgets.QMessageBox.critical(self, "错误", f"无法启动标注窗口: {str(e)}")
 
     def open_image(self):
         """打开并显示原始图片"""
