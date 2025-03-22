@@ -11,6 +11,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setWindowTitle('PCB缺陷检测（Designed by 卫福春阳）')
         self.resize(1400, 900)
 
+        # 设置任务栏图标
+        self.setWindowIcon(QtGui.QIcon("Icons/app_icon.icns"))
+
         # 初始化日志系统
         self.log_widget = LogWidget()
         self.logger = Logger(self.log_widget)
@@ -171,6 +174,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication([])
+    app.setWindowIcon(QtGui.QIcon("Icons/app_icon.icns"))
     window = MainWindow()
     window.show()
     app.exec()

@@ -208,7 +208,7 @@ class DetectionModePage1(QtWidgets.QWidget):
                 self.output_window.clear_results()
 
             # 执行YOLO检测
-            self.results = self.model(self.current_image)[0]
+            self.results = self.model(self.current_image, conf = 0.05)[0]
             self.base_result_image = self.results.plot(line_width=2).copy()
 
             # 显示检测结果

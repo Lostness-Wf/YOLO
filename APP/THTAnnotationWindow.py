@@ -116,9 +116,9 @@ class AnnotationWindow(QtWidgets.QDialog):
                     f"{idx + 1}",
                     (xyxy[0], xyxy[1] - 10),
                     cv2.FONT_HERSHEY_SIMPLEX,
-                    0.8,
+                    5.0,
                     (0, 255, 0),
-                    2
+                    9
                 )
 
         self.update_image(annotated_image)
@@ -302,7 +302,7 @@ class AnnotationWindow(QtWidgets.QDialog):
             }
 
         if validation_errors > 0:
-            self.logger.log(f"存在 {validation_errors} 个未完整填写的电阻数据", "ERROR")
+            self.logger.log(f"存在 {validation_errors} 个未完整填写的电阻数据", "WARNING")
             QtWidgets.QMessageBox.warning(self, "保存警告", f"有 {validation_errors} 个电阻数据未完整填写！")
         else:
             self.logger.log(f"已保存的色环数据：{self.annotations}", "INFO")

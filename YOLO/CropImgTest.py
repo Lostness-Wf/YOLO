@@ -4,11 +4,11 @@ from ultralytics import YOLO
 from ultralytics.utils.plotting import Annotator, colors
 
 # 加载模型
-model = YOLO(r"/Users/wfcy/Dev/PycharmProj/YOLOTrain/APP/Module/THT_V8x.pt")
+model = YOLO(r"/Users/wfcy/Dev/PycharmProj/YOLOTrain/APP/Module/THT_V11x.pt")
 names = model.names
 
 # 输入图像路径
-image_path = r"/Users/wfcy/Dev/PycharmProj/YOLOTrain/APP/Picture/3.jpg"
+image_path = r"/Users/wfcy/Dev/PycharmProj/YOLOTrain/APP/Picture/4.jpg"
 im0 = cv2.imread(image_path)
 assert im0 is not None, "Error reading image file"
 
