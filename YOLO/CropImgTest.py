@@ -8,7 +8,7 @@ model = YOLO(r"/Users/wfcy/Dev/PycharmProj/YOLOTrain/APP/Module/THT_V11x.pt")
 names = model.names
 
 # 输入图像路径
-image_path = r"/Users/wfcy/Dev/PycharmProj/YOLOTrain/APP/Picture/4.jpg"
+image_path = r"/Users/wfcy/Dev/PycharmProj/YOLOTrain/APP/Picture/10.jpg"
 im0 = cv2.imread(image_path)
 assert im0 is not None, "Error reading image file"
 
@@ -18,7 +18,7 @@ if not os.path.exists(crop_dir_name):
     os.mkdir(crop_dir_name)
 
 # 检测
-results = model.predict(im0, show=False)
+results = model.predict(im0, show=False, conf = 0.05)
 boxes = results[0].boxes.xyxy.cpu().tolist()
 clss = results[0].boxes.cls.cpu().tolist()
 annotator = Annotator(im0, line_width=2, example=names)
