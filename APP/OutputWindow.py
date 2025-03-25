@@ -162,7 +162,7 @@ class OutputWindow(QtWidgets.QWidget):
             if self.logger:
                 self.logger.log(f"保存CSV失败: {str(e)}", "ERROR")
 
-    def add_detection_result(self, coords, class_name, confidence, test_text="测试"):
+    def add_detection_result(self, coords, class_name, confidence, tht_value="测试"):
         """添加检测结果到当前模式缓存"""
         if self.current_mode not in self.mode_caches:
             self.mode_caches[self.current_mode] = []
@@ -171,7 +171,7 @@ class OutputWindow(QtWidgets.QWidget):
             "coords": coords,
             "class": class_name,
             "confidence": confidence,
-            "text": test_text
+            "text": tht_value
         })
 
         self.refresh_table()
