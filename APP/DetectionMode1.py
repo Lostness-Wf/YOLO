@@ -1,6 +1,7 @@
 from PySide6 import QtWidgets, QtCore, QtGui
 import cv2
 import copy
+import os
 from ultralytics import YOLO
 from pathlib import Path
 from THTAnnotationWindow import AnnotationWindow
@@ -10,6 +11,7 @@ class DetectionModePage1(QtWidgets.QWidget):
     def __init__(self, logger):
         super().__init__()
         self.current_image = None
+        self.image_name = None
         self.model = None
         self.model_path = None
         self.base_result_image = None  # 存储基础检测图
@@ -116,7 +118,7 @@ class DetectionModePage1(QtWidgets.QWidget):
             return
 
         try:
-            self.annot_window = AnnotationWindow(self.model, self.current_image, self.logger, self)
+            self.annot_window = AnnotationWindow(self.model, self.current_image, self.logger, self, self.image_name)
             self.annot_window.exec()
         except Exception as e:
             self.logger.log(f"标注窗口打开失败: {str(e)}", "ERROR")
@@ -134,6 +136,7 @@ class DetectionModePage1(QtWidgets.QWidget):
         if file_path:
             try:
                 self.logger.log(f"检测模式一尝试打开图片: {file_path}")
+                self.image_name = os.path.basename(file_path)  # 带扩展名的文件名（如：image.jpg）
                 self.current_image = cv2.imread(file_path)
                 if self.current_image is not None:
                     self.show_image(self.label_original, self.current_image)
@@ -168,6 +171,7 @@ class DetectionModePage1(QtWidgets.QWidget):
                 self.model = None
                 self.label_original.clear()
                 self.label_result.clear()
+                self.image_name = None
                 self.current_image = None
                 self.base_result_image = None
                 self.results = None

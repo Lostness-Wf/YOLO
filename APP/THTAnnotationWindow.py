@@ -1,11 +1,13 @@
 from PySide6 import QtWidgets, QtCore, QtGui
 import cv2
 import copy
+import os
+import json
 from LogWindow import Logger
 
 
 class AnnotationWindow(QtWidgets.QDialog):
-    def __init__(self, yolo_model, input_image, logger, detect_mode, parent=None):
+    def __init__(self, yolo_model, input_image, logger, detect_mode, filename, parent=None):
         super().__init__(parent)
         # 定义颜色配置
         self.base_colors = ["黑", "棕", "红", "橙", "黄", "绿", "蓝", "紫", "灰", "白"]  # 基础颜色环（数字）
@@ -18,6 +20,7 @@ class AnnotationWindow(QtWidgets.QDialog):
         self.annotations = {}
         self.setup_ui()
         self.detect_mode = detect_mode
+        self.filename = filename  # 新增文件名属性
         self.logger = logger
         self.perform_detection()
         self.setWindowTitle("阻值设置")
@@ -77,6 +80,70 @@ class AnnotationWindow(QtWidgets.QDialog):
         table_layout.addWidget(self.btn_save)
         main_layout.addWidget(table_frame, 2)
 
+    def get_config_path(self):
+        """生成配置文件路径（自动创建 config 子目录）"""
+        if not self.filename:
+            return None
+
+        # 获取原文件所在目录
+        file_dir = os.path.dirname(self.filename)
+
+        # 构建 config 子目录路径
+        config_dir = os.path.join(file_dir, "AnnotationConfig")
+
+        # 自动创建目录（如果不存在）
+        os.makedirs(config_dir, exist_ok=True)
+
+        # 提取纯文件名（不带扩展名）
+        base_name = os.path.splitext(os.path.basename(self.filename))[0]
+
+        # 组合最终路径
+        return os.path.join(config_dir, f"{base_name}_config.json")
+
+    def load_annotations(self):
+        """从配置文件加载标注数据"""
+        config_path = self.get_config_path()
+        if not config_path or not os.path.exists(config_path):
+            return
+
+        try:
+            with open(config_path, 'r', encoding='utf-8') as f:
+                saved_annotations = json.load(f)
+                self.apply_saved_annotations(saved_annotations)
+                self.logger.log(f"成功加载配置文件：{config_path}", "INFO")
+        except Exception as e:
+            self.logger.log(f"加载配置文件失败：{str(e)}", "ERROR")
+
+    def apply_saved_annotations(self, saved_annotations):
+        """将保存的配置应用到表格"""
+        for row in range(self.table.rowCount()):
+            number_item = self.table.item(row, 0)
+            if not number_item:
+                continue
+            resistor_id = number_item.text()
+            if resistor_id not in saved_annotations:
+                continue
+
+            config = saved_annotations[resistor_id]
+            # 设置环数类型
+            band_combo = self.table.cellWidget(row, 1)
+            if isinstance(band_combo, QtWidgets.QComboBox):
+                index = band_combo.findText(config["type"])
+                if index >= 0:
+                    band_combo.setCurrentIndex(index)
+                    self.update_band_options(row)  # 更新下拉选项
+
+            # 设置颜色选项
+            colors = config["colors"]
+            for col in range(2, 7):
+                combo = self.table.cellWidget(row, col)
+                if isinstance(combo, QtWidgets.QComboBox) and (col - 2) < len(colors):
+                    color = colors[col - 2]
+                    if color:
+                        index = combo.findText(color)
+                        if index >= 0:
+                            combo.setCurrentIndex(index)
+
     def perform_detection(self):
         """执行YOLO检测并更新界面"""
         try:
@@ -84,6 +151,7 @@ class AnnotationWindow(QtWidgets.QDialog):
             self.results = self.model(self.original_image)[0]
             self.draw_annotations()  # 初始化绘制
             self.update_table()
+            self.load_annotations()  # 检测完成后加载配置
 
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, "检测错误", f"检测失败: {str(e)}")
@@ -301,6 +369,17 @@ class AnnotationWindow(QtWidgets.QDialog):
                 "type": band_combo.currentText(),
                 "colors": colors
             }
+
+        # 保存到文件
+        config_path = self.get_config_path()
+        if config_path:
+            try:
+                with open(config_path, 'w', encoding='utf-8') as f:
+                    json.dump(self.annotations, f, ensure_ascii=False, indent=4)
+                self.logger.log(f"配置文件已保存：{config_path}", "INFO")
+            except Exception as e:
+                self.logger.log(f"保存配置文件失败：{str(e)}", "ERROR")
+                QtWidgets.QMessageBox.warning(self, "保存失败", f"文件保存失败：{str(e)}")
 
         # 将保存的阻值传递并保存到detect_mode中
         self.detect_mode.refresh_annotations()
