@@ -108,7 +108,7 @@ def predict_and_visualize(model_path, img_path, colors):
         return None, []
 
     # 进行预测
-    results = model.predict(img)
+    results = model.predict(img, conf=0.01)
 
     # 绘制预测结果
     plotted_img, color_info = plot_predictions(img, results, colors)
@@ -117,7 +117,7 @@ def predict_and_visualize(model_path, img_path, colors):
 
 
 if __name__ == '__main__':
-    num=input("请输入要识别的电阻色环数量（1.四环电阻 2.五环电阻）：")
+    # num=input("请输入要识别的电阻色环数量（1.四环电阻 2.五环电阻）：")
     # 颜色映射字典 {class_id: color_name}
     COLOR_MAP = {
         0: "red",
@@ -134,13 +134,13 @@ if __name__ == '__main__':
     }
 
     # 模型路径
-    if num==4:
-        MODEL_PATH = r'/Users/wfcy/Dev/PycharmProj/YOLOTrain/APP/train/train4/weights/best.pt'  # 替换为你的模型路径
-    else:
-        MODEL_PATH = r'/Users/wfcy/Dev/PycharmProj/YOLOTrain/APP/train/train5/weights/best.pt'
+    # if num==4:
+    MODEL_PATH = r'/Users/wfcy/Dev/PycharmProj/YOLOTrain/APP/Module/THTColorDetect/train4/weights/best.pt'  # 替换为你的模型路径
+    # else:
+    # MODEL_PATH = r'/Users/wfcy/Dev/PycharmProj/YOLOTrain/APP/Module/THTColorDetect/train5/weights/best.pt'
 
     # 图像路径
-    IMAGE_PATH = r'/Users/wfcy/Dev/PycharmProj/YOLOTrain/DataSet/dianzu/five/val/images/70.png'  # 替换为你的测试图像路径
+    IMAGE_PATH = r'/Users/wfcy/Dev/PycharmProj/YOLOTrain/APP/CropResult/4.png'  # 替换为你的测试图像路径
 
     # 进行预测和可视化
     result_img, colors_detected = predict_and_visualize(MODEL_PATH, IMAGE_PATH, COLOR_MAP)
@@ -152,9 +152,9 @@ if __name__ == '__main__':
         cv2.destroyAllWindows()
 
         # 保存结果
-        output_path = 'result_' + IMAGE_PATH
-        cv2.imwrite(output_path, result_img)
-        print(f"Result saved to {output_path}")
+        # output_path = 'result_' + IMAGE_PATH
+        # cv2.imwrite(output_path, result_img)
+        # print(f"Result saved to {output_path}")
 
         # 打印检测到的颜色（按从左到右的顺序）
         print("\n检测到的颜色（按从左到右顺序排列）:")

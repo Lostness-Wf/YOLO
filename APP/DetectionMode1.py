@@ -18,7 +18,7 @@ class DetectionModePage1(QtWidgets.QWidget):
         self.results = None  # 存储检测结果对象
         self.logger = logger
         self.output_window = None
-        self.cache_annotation = None
+        self.cache_annotation = {}
 
         self.init_default_dirs()
         self.setup_ui()
@@ -124,6 +124,30 @@ class DetectionModePage1(QtWidgets.QWidget):
             self.logger.log(f"标注窗口打开失败: {str(e)}", "ERROR")
             QtWidgets.QMessageBox.critical(self, "错误", f"无法启动标注窗口: {str(e)}")
 
+    def detect_resistor_color(self, resistor_img, resistor_type):
+        """色环识别核心逻辑"""
+        COLOR_MAP = {
+            0: "红", 1: "黄", 2: "黑", 3: "金",
+            4: "橙", 5: "蓝", 6: "棕", 7: "绿",
+            8: "紫", 9: "白", 10: "灰"
+        }
+
+        from THTColorDetect import predict_and_visualize
+
+        # 根据电阻类型选择模型路径
+        if resistor_type == '四环':
+            model_path = "/Users/wfcy/Dev/PycharmProj/YOLOTrain/APP/Module/THTColorDetect/train4/weights/best.pt"
+        else:
+            model_path = "/Users/wfcy/Dev/PycharmProj/YOLOTrain/APP/Module/THTColorDetect/train5/weights/best.pt"
+
+        # 临时保存裁剪图像
+        temp_path = "temp_resistor.jpg"
+        cv2.imwrite(temp_path, resistor_img)
+
+        # 执行色环识别
+        plotted_img, colors = predict_and_visualize(model_path, temp_path, COLOR_MAP)
+        return colors
+
     def open_image(self):
         """打开并显示原始图片"""
         default_dir = str(Path("Picture").absolute())
@@ -221,17 +245,35 @@ class DetectionModePage1(QtWidgets.QWidget):
 
             # 填充检测结果到输出窗口
             if self.output_window and self.results.boxes:
-                for box in self.results.boxes:
+                for idx, box in enumerate(self.results.boxes, start=1):
                     xyxy = box.xyxy[0].cpu().numpy()
                     class_id = int(box.cls)
                     class_name = self.model.names[class_id]
                     confidence = box.conf.item()
                     x_center = (xyxy[0] + xyxy[2]) / 2
                     y_center = (xyxy[1] + xyxy[3]) / 2
+
+                    # 获取边界框坐标
+                    x1, y1, x2, y2 = map(int, box.xyxy[0].cpu().numpy())
+
+                    # 裁剪电阻区域
+                    resistor_img = self.current_image[y1:y2, x1:x2]
+
+                    # 从缓存获取电阻类型
+                    resistor_info = self.cache_annotation.get(str(idx), {})
+                    resistor_type = resistor_info.get('type', '四环')  # 默认四环
+
+                    # 执行色环识别
+                    color_sequence = self.detect_resistor_color(resistor_img, resistor_type)
+
+                    # 构造显示字符串
+                    color_str = " ".join(color_sequence) if color_sequence else "未识别"
+
                     self.output_window.add_detection_result(
                         (x_center, y_center),
                         class_name,
-                        confidence
+                        confidence,
+                        color_str
                     )
 
             self.logger.log("检测模式一图片检测完成", "SUCCESS")

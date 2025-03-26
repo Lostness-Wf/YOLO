@@ -8,7 +8,7 @@ model = YOLO(r"/Users/wfcy/Dev/PycharmProj/YOLOTrain/APP/Module/THT_V11x.pt")
 names = model.names
 
 # 输入图像路径
-image_path = r"/Users/wfcy/Dev/PycharmProj/YOLOTrain/APP/Picture/10.jpg"
+image_path = r"/Users/wfcy/Dev/PycharmProj/YOLOTrain/APP/Picture/1.jpg"
 im0 = cv2.imread(image_path)
 assert im0 is not None, "Error reading image file"
 
