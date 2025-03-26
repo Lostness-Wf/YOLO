@@ -5,7 +5,7 @@ from LogWindow import Logger
 
 
 class AnnotationWindow(QtWidgets.QDialog):
-    def __init__(self, yolo_model, input_image, logger, parent=None):
+    def __init__(self, yolo_model, input_image, logger, detect_mode, parent=None):
         super().__init__(parent)
         # 定义颜色配置
         self.base_colors = ["黑", "棕", "红", "橙", "黄", "绿", "蓝", "紫", "灰", "白"]  # 基础颜色环（数字）
@@ -17,6 +17,7 @@ class AnnotationWindow(QtWidgets.QDialog):
         self.results = None
         self.annotations = {}
         self.setup_ui()
+        self.detect_mode = detect_mode
         self.logger = logger
         self.perform_detection()
         self.setWindowTitle("阻值设置")
@@ -300,6 +301,9 @@ class AnnotationWindow(QtWidgets.QDialog):
                 "type": band_combo.currentText(),
                 "colors": colors
             }
+
+        # 将保存的阻值传递并保存到detect_mode中
+        self.detect_mode.refresh_annotations()
 
         if validation_errors > 0:
             self.logger.log(f"存在 {validation_errors} 个未完整填写的电阻数据", "WARNING")

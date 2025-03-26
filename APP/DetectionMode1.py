@@ -16,6 +16,7 @@ class DetectionModePage1(QtWidgets.QWidget):
         self.results = None  # 存储检测结果对象
         self.logger = logger
         self.output_window = None
+        self.cache_annotation = None
 
         self.init_default_dirs()
         self.setup_ui()
@@ -115,7 +116,7 @@ class DetectionModePage1(QtWidgets.QWidget):
             return
 
         try:
-            self.annot_window = AnnotationWindow(self.model, self.current_image, self.logger)
+            self.annot_window = AnnotationWindow(self.model, self.current_image, self.logger, self)
             self.annot_window.exec()
         except Exception as e:
             self.logger.log(f"标注窗口打开失败: {str(e)}", "ERROR")
@@ -284,3 +285,8 @@ class DetectionModePage1(QtWidgets.QWidget):
 
         except Exception as e:
             self.logger.log(f"检测模式一图片显示失败: {str(e)}", "ERROR")
+
+    def refresh_annotations(self):
+        self.cache_annotation.clear()
+        self.cache_annotation = self.annot_window.annotations
+        self.logger.log(f"已保存的色环数据：{self.cache_annotation}", "WARNING")
