@@ -343,7 +343,19 @@ class DetectionModePage1(QtWidgets.QWidget):
             # 获取处理后的颜色信息
             _, color_info = self.plot_predictions(crop_img, results, self.COLOR_MAP)
 
-            return ", ".join(color_info) if color_info else "未识别到色环"
+            # 金开头反转逻辑
+            if color_info and len(color_info) > 0:
+                # 检查第一个色环是否为金
+                if color_info[0] == "金":
+                    # 反转色环顺序（保留原始列表）
+                    reversed_colors = color_info[::-1]
+
+                    # 日志记录原始和调整后的顺序
+                    self.logger.log(f"检测到金色开头色环，执行顺序调整: {color_info} -> {reversed_colors}", "WARNING")
+
+                    return " ".join(reversed_colors)
+
+            return " ".join(color_info) if color_info else "未识别到色环"
         except Exception as e:
             self.logger.log(f"色环检测失败: {str(e)}", "ERROR")
             return "色环检测错误"
@@ -413,9 +425,9 @@ class DetectionModePage1(QtWidgets.QWidget):
                     )
 
                     # 保存裁剪图片
-                    # safe_class_name = class_name.replace(' ', '_')
-                    # filename = default_dir / f"crop_{i}_{safe_class_name}_{confidence:.2f}.jpg"
-                    # cv2.imwrite(str(filename), crop_img)
+                    safe_class_name = class_name.replace(' ', '_')
+                    filename = default_dir / f"crop_{i}_{safe_class_name}_{confidence:.2f}.jpg"
+                    cv2.imwrite(str(filename), crop_img)
 
             self.logger.log("检测模式一图片检测完成", "SUCCESS")
 
