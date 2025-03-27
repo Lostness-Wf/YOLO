@@ -3,7 +3,6 @@ import cv2
 import copy
 import os
 import json
-from LogWindow import Logger
 
 
 class AnnotationWindow(QtWidgets.QDialog):
@@ -388,7 +387,7 @@ class AnnotationWindow(QtWidgets.QDialog):
             self.logger.log(f"存在 {validation_errors} 个未完整填写的电阻数据", "WARNING")
             QtWidgets.QMessageBox.warning(self, "保存警告", f"有 {validation_errors} 个电阻数据未完整填写！")
         else:
-            self.logger.log(f"已保存的色环数据：{self.annotations}", "INFO")
+            # self.logger.log(f"已保存的色环数据：{self.annotations}", "INFO")
             QtWidgets.QMessageBox.information(self, "保存成功", "所有色环数据已完整保存！")
 
     def closeEvent(self, event):

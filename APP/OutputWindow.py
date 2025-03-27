@@ -41,22 +41,22 @@ class OutputWindow(QtWidgets.QWidget):
 
         # 表格样式设置
         for col in range(4):
-            self.table.horizontalHeader().setSectionResizeMode(col, QtWidgets.QHeaderView.Stretch)
+            self.table.horizontalHeader().setSectionResizeMode(col, QtWidgets.QHeaderView.ResizeMode.Stretch)
 
         # 设置第一列宽度（“编号“）
-        self.table.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.Fixed)
+        self.table.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeMode.Fixed)
         self.table.setColumnWidth(0, 100)
 
         # 设置第三列宽度（“类名“）
-        self.table.horizontalHeader().setSectionResizeMode(2, QtWidgets.QHeaderView.Fixed)
+        self.table.horizontalHeader().setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeMode.Fixed)
         self.table.setColumnWidth(2, 100)
 
         # 设置第四列宽度（“置信度“）
-        self.table.horizontalHeader().setSectionResizeMode(3, QtWidgets.QHeaderView.Fixed)
+        self.table.horizontalHeader().setSectionResizeMode(3, QtWidgets.QHeaderView.ResizeMode.Fixed)
         self.table.setColumnWidth(3, 100)
 
         # 设置最后一列宽度（“电阻阻值“）
-        self.table.horizontalHeader().setSectionResizeMode(4, QtWidgets.QHeaderView.Fixed)
+        self.table.horizontalHeader().setSectionResizeMode(4, QtWidgets.QHeaderView.ResizeMode.Fixed)
         self.table.setColumnWidth(4,  250)
 
         self.table.verticalHeader().setVisible(False)

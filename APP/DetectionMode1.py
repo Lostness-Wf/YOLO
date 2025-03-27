@@ -206,6 +206,7 @@ class DetectionModePage1(QtWidgets.QWidget):
 
             # 跳过置信度低的框
             if conf < 0.5:
+                self.logger.log(f"跳过低置信度检测框: {color_name} {conf:.2f}", "WARNING")
                 continue
 
             detections.append({
@@ -217,6 +218,7 @@ class DetectionModePage1(QtWidgets.QWidget):
             })
 
         if not detections:
+            self.logger.log("未检测到有效色环", "WARNING")
             return img, []
 
         # 1. 异常框处理 - 过滤过于接近或分散的框
@@ -244,6 +246,7 @@ class DetectionModePage1(QtWidgets.QWidget):
             # 处理过近的框对
             for i in range(len(distances)):
                 if distances[i] < min_threshold:
+                    self.logger.log(f"检测到过近框对 {i}-{i + 1}，距离{distances[i]:.1f}", "WARNING")
                     # 保留置信度较高的框
                     if detections[i]['conf'] > detections[i + 1]['conf']:
                         valid_indices.discard(i + 1)
@@ -257,6 +260,7 @@ class DetectionModePage1(QtWidgets.QWidget):
                 prev_dist = distances[i - 1] if i < len(distances) else distances[-1]
                 next_dist = distances[i] if i < len(distances) else distances[-1]
                 if (prev_dist > max_threshold and next_dist > max_threshold):
+                    self.logger.log(f"检测到孤立异常框 {i}，前后距离{prev_dist:.1f}/{next_dist:.1f}", "WARNING")
                     valid_indices.discard(i)
 
             # 创建过滤后的检测列表
@@ -266,6 +270,7 @@ class DetectionModePage1(QtWidgets.QWidget):
 
         # 如果没有有效检测框，返回空结果
         if not filtered_detections:
+            self.logger.log("异常框过滤后无有效色环保留", "WARNING")
             return img, []
 
         # 2. 判断图像方向（横向或纵向）
@@ -278,10 +283,10 @@ class DetectionModePage1(QtWidgets.QWidget):
         # 3. 根据图像方向进行初步排序
         if horizontal:
             filtered_detections.sort(key=lambda x: x['center'][0])
-            print("检测到横向电阻，按X坐标排序")
+            self.logger.log("检测到横向电阻，按X坐标排序", "INFO")
         else:
             filtered_detections.sort(key=lambda x: x['center'][1])
-            print("检测到纵向电阻，按Y坐标排序")
+            self.logger.log("检测到横向电阻，按Y坐标排序", "INFO")
 
         # 4. 计算相邻色环的距离
         distances = []
@@ -300,15 +305,15 @@ class DetectionModePage1(QtWidgets.QWidget):
             if max_dist_idx == 0:
                 # 最大间隔在最前面 - 顺序情况
                 ordered_detections = list(reversed(filtered_detections))
-                print("检测到顺序排列的色环")
+                self.logger.log("检测到顺序排列的色环", "INFO")
             elif max_dist_idx == len(distances) - 1:
                 # 最大间隔在最后面 - 逆序情况
                 ordered_detections = filtered_detections
-                print("检测到逆序排列的色环")
+                self.logger.log("检测到逆序排列的色环", "INFO")
             else:
                 # 其他情况（非常规排列）
                 ordered_detections = filtered_detections[max_dist_idx + 1:] + filtered_detections[:max_dist_idx + 1]
-                print("检测到非常规排列的色环，已尝试调整")
+                self.logger.log("检测到非常规排列的色环，已尝试调整", "INFO")
         else:
             ordered_detections = filtered_detections
 
@@ -351,7 +356,7 @@ class DetectionModePage1(QtWidgets.QWidget):
                     reversed_colors = color_info[::-1]
 
                     # 日志记录原始和调整后的顺序
-                    self.logger.log(f"检测到金色开头色环，执行顺序调整: {color_info} -> {reversed_colors}", "WARNING")
+                    self.logger.log(f"检测到误差环出现在第一位，排序出错，执行顺序调整: {color_info} -> {reversed_colors}", "WARNING")
 
                     return " ".join(reversed_colors)
 
@@ -524,4 +529,3 @@ class DetectionModePage1(QtWidgets.QWidget):
     def refresh_annotations(self):
         self.cache_annotation.clear()
         self.cache_annotation = self.annot_window.annotations
-        self.logger.log(f"已保存的色环数据：{self.cache_annotation}", "WARNING")
