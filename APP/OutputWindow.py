@@ -18,6 +18,18 @@ class OutputWindow(QtWidgets.QWidget):
 
     def initialize_components(self):
         """初始化界面组件"""
+        # main_layout = QtWidgets.QVBoxLayout(self)
+        # main_layout.setContentsMargins(0, 0, 0, 0)
+        # main_layout.setSpacing(0)
+
+        # 结果表格初始化
+        # self.table = QtWidgets.QTableWidget()
+        # self.table.setColumnCount(5)
+        # self.table.setHorizontalHeaderLabels(["编号", "坐标", "类名", "置信度", "电阻阻值"])
+        # self.table.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeMode.Stretch)
+        # self.table.verticalHeader().setVisible(False)
+        # self.table.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
+
         main_layout = QtWidgets.QVBoxLayout(self)
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
@@ -26,7 +38,27 @@ class OutputWindow(QtWidgets.QWidget):
         self.table = QtWidgets.QTableWidget()
         self.table.setColumnCount(5)
         self.table.setHorizontalHeaderLabels(["编号", "坐标", "类名", "置信度", "电阻阻值"])
-        self.table.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeMode.Stretch)
+
+        # 表格样式设置
+        for col in range(4):
+            self.table.horizontalHeader().setSectionResizeMode(col, QtWidgets.QHeaderView.Stretch)
+
+        # 设置第一列宽度（“编号“）
+        self.table.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.Fixed)
+        self.table.setColumnWidth(0, 100)
+
+        # 设置第三列宽度（“类名“）
+        self.table.horizontalHeader().setSectionResizeMode(2, QtWidgets.QHeaderView.Fixed)
+        self.table.setColumnWidth(2, 100)
+
+        # 设置第四列宽度（“置信度“）
+        self.table.horizontalHeader().setSectionResizeMode(3, QtWidgets.QHeaderView.Fixed)
+        self.table.setColumnWidth(3, 100)
+
+        # 设置最后一列宽度（“电阻阻值“）
+        self.table.horizontalHeader().setSectionResizeMode(4, QtWidgets.QHeaderView.Fixed)
+        self.table.setColumnWidth(4,  250)
+
         self.table.verticalHeader().setVisible(False)
         self.table.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
 
