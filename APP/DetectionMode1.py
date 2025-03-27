@@ -144,37 +144,6 @@ class DetectionModePage1(QtWidgets.QWidget):
             self.logger.log(f"标注窗口打开失败: {str(e)}", "ERROR")
             QtWidgets.QMessageBox.critical(self, "错误", f"无法启动标注窗口: {str(e)}")
 
-    def open_image(self):
-        """打开并显示原始图片"""
-        default_dir = str(Path("Picture").absolute())
-        file_path, _ = QtWidgets.QFileDialog.getOpenFileName(
-            self, "检测模式一选择图片",
-            default_dir,
-            "图片文件 (*.jpg *.jpeg *.png *.bmp)"
-        )
-
-        if file_path:
-            try:
-                self.logger.log(f"检测模式一尝试打开图片: {file_path}")
-                self.image_name = os.path.basename(file_path)  # 带扩展名的文件名（如：image.jpg）
-                self.current_image = cv2.imread(file_path)
-                if self.current_image is not None:
-                    self.show_image(self.label_original, self.current_image)
-                    self.label_result.clear()
-                    self.label_result.setText("检测结果")
-                    self.logger.log(f"检测模式一成功打开图片: {Path(file_path).name}")
-                    # 清空相关缓存
-                    self.base_result_image = None
-                    self.results = None
-                    if self.output_window:
-                        self.output_window.clear_results()
-                else:
-                    self.logger.log("检测模式一图片文件读取失败", "ERROR")
-                    QtWidgets.QMessageBox.critical(self, "检测模式一错误", "无法读取图片文件")
-            except Exception as e:
-                self.logger.log(f"检测模式一图片打开失败: {str(e)}", "ERROR")
-                QtWidgets.QMessageBox.critical(self, "检测模式一错误", f"图片加载失败: {str(e)}")
-
     def select_model(self):
         """选择并加载YOLO模型"""
         default_dir = str(Path("Module").absolute())
@@ -365,7 +334,6 @@ class DetectionModePage1(QtWidgets.QWidget):
 
         return img, color_info
 
-    # 新增色环检测函数
     def detect_tht_colors(self, crop_img):
         """对裁剪的电阻图像进行色环检测"""
         try:
@@ -472,20 +440,22 @@ class DetectionModePage1(QtWidgets.QWidget):
             # 深拷贝基础图像用于绘制
             display_image = copy.deepcopy(image)
 
-            # 动态绘制选中框（与输出窗口联动）
-            if self.results and self.results.boxes and self.output_window:
-                selected_ids = self.output_window.get_selected_ids()
+            # 仅当显示检测结果时绘制选中框
+            if label == self.label_result:
+                # 动态绘制选中框（与输出窗口联动）
+                if self.results and self.results.boxes and self.output_window:
+                    selected_ids = self.output_window.get_selected_ids()
 
-                for idx, box in enumerate(self.results.boxes, start=1):
-                    if idx in selected_ids:
-                        xyxy = box.xyxy[0].cpu().numpy().astype(int)
-                        cv2.rectangle(
-                            display_image,
-                            (xyxy[0], xyxy[1]),
-                            (xyxy[2], xyxy[3]),
-                            color=(0, 255, 0),  # 红色
-                            thickness=15  # 加粗线宽
-                        )
+                    for idx, box in enumerate(self.results.boxes, start=1):
+                        if idx in selected_ids:
+                            xyxy = box.xyxy[0].cpu().numpy().astype(int)
+                            cv2.rectangle(
+                                display_image,
+                                (xyxy[0], xyxy[1]),
+                                (xyxy[2], xyxy[3]),
+                                color=(0, 255, 0),  # 绿色
+                                thickness=15  # 加粗线宽
+                            )
 
             # 转换为QPixmap并显示
             label.clear()
@@ -504,6 +474,40 @@ class DetectionModePage1(QtWidgets.QWidget):
 
         except Exception as e:
             self.logger.log(f"检测模式一图片显示失败: {str(e)}", "ERROR")
+
+    def open_image(self):
+        """打开并显示原始图片"""
+        default_dir = str(Path("Picture").absolute())
+        file_path, _ = QtWidgets.QFileDialog.getOpenFileName(
+            self, "检测模式一选择图片",
+            default_dir,
+            "图片文件 (*.jpg *.jpeg *.png *.bmp)"
+        )
+
+        if file_path:
+            try:
+                # 清空所有检测相关状态
+                self.results = None
+                self.base_result_image = None
+                self.logger.log(f"检测模式一尝试打开图片: {file_path}")
+                self.image_name = os.path.basename(file_path)  # 带扩展名的文件名（如：image.jpg）
+                self.current_image = cv2.imread(file_path)
+                if self.current_image is not None:
+                    self.show_image(self.label_original, self.current_image)
+                    self.label_result.clear()
+                    self.label_result.setText("检测结果")
+                    self.logger.log(f"检测模式一成功打开图片: {Path(file_path).name}")
+                    # 清空相关缓存
+                    self.base_result_image = None
+                    self.results = None
+                    if self.output_window:
+                        self.output_window.clear_results()
+                else:
+                    self.logger.log("检测模式一图片文件读取失败", "ERROR")
+                    QtWidgets.QMessageBox.critical(self, "检测模式一错误", "无法读取图片文件")
+            except Exception as e:
+                self.logger.log(f"检测模式一图片打开失败: {str(e)}", "ERROR")
+                QtWidgets.QMessageBox.critical(self, "检测模式一错误", f"图片加载失败: {str(e)}")
 
     def refresh_annotations(self):
         self.cache_annotation.clear()
