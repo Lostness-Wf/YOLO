@@ -1,7 +1,9 @@
+import numpy as np
 from PySide6 import QtWidgets, QtCore, QtGui
 import cv2
 import copy
 import os
+import shutil
 from ultralytics import YOLO
 from pathlib import Path
 from THTAnnotationWindow import AnnotationWindow
@@ -20,6 +22,22 @@ class DetectionModePage1(QtWidgets.QWidget):
         self.output_window = None
         self.cache_annotation = {}
 
+        # 加载色环检测模型
+        self.tht_model = YOLO(r'/Users/wfcy/Dev/PycharmProj/YOLOTrain/APP/Module/THTColorDetect/New/best.pt')
+        self.COLOR_MAP = {
+            0: "红",
+            1: "黄",
+            2: "黑",
+            3: "金",
+            4: "橙",
+            5: "蓝",
+            6: "棕",
+            7: "绿",
+            8: "紫",
+            9: "白",
+            10: "灰"
+        }
+
         self.init_default_dirs()
         self.setup_ui()
         self.setup_connections()
@@ -29,6 +47,8 @@ class DetectionModePage1(QtWidgets.QWidget):
         """初始化默认存储目录"""
         Path("Picture").mkdir(parents=True, exist_ok=True)
         Path("Module").mkdir(parents=True, exist_ok=True)
+        Path("CropResult").mkdir(parents=True, exist_ok=True)
+        Path("THTColorDetectResult").mkdir(parents=True, exist_ok=True)
 
     def set_output_window(self, output_window):
         """设置输出窗口引用"""
@@ -195,6 +215,171 @@ class DetectionModePage1(QtWidgets.QWidget):
                 )
                 self.btn_model.setText("⚙️ 选择模型")
 
+    def plot_predictions(self, image, results, colors):
+        """
+        在图像上绘制预测框和颜色标签，并按照色环顺序排序
+        增加异常框处理逻辑：
+        - 处理过于接近的相邻框
+        - 处理过于分散的异常框
+        """
+        img = image.copy()
+        color_info = []
+        boxes = results[0].boxes
+
+        # 收集所有检测框的中心点坐标和颜色信息
+        detections = []
+        for box in boxes:
+            class_id = int(box.cls)
+            color_name = colors.get(class_id, f"Unknown_{class_id}")
+            x1, y1, x2, y2 = map(int, box.xyxy[0])
+            center_x, center_y = (x1 + x2) // 2, (y1 + y2) // 2
+            conf = float(box.conf)
+
+            # 跳过置信度低的框
+            if conf < 0.5:
+                continue
+
+            detections.append({
+                'box': (x1, y1, x2, y2),
+                'center': (center_x, center_y),
+                'color': color_name,
+                'class_id': class_id,
+                'conf': conf
+            })
+
+        if not detections:
+            return img, []
+
+        # 1. 异常框处理 - 过滤过于接近或分散的框
+        filtered_detections = []
+        if len(detections) > 1:
+            # 计算所有相邻框的距离
+            distances = []
+            for i in range(len(detections) - 1):
+                p1 = detections[i]['center']
+                p2 = detections[i + 1]['center']
+                distance = np.sqrt((p2[0] - p1[0]) ** 2 + (p2[1] - p1[1]) ** 2)
+                distances.append(distance)
+
+            # 计算平均距离和标准差
+            avg_distance = np.mean(distances)
+            std_distance = np.std(distances)
+
+            # 距离阈值设置
+            min_threshold = avg_distance * 0.3  # 小于平均距离30%视为过近
+            max_threshold = avg_distance * 2.0  # 大于平均距离200%视为过远
+
+            # 保留有效框的索引
+            valid_indices = set(range(len(detections)))
+
+            # 处理过近的框对
+            for i in range(len(distances)):
+                if distances[i] < min_threshold:
+                    # 保留置信度较高的框
+                    if detections[i]['conf'] > detections[i + 1]['conf']:
+                        valid_indices.discard(i + 1)
+                    else:
+                        valid_indices.discard(i)
+
+            # 处理过远的异常框
+            for i in range(len(detections)):
+                if i == 0:
+                    continue
+                prev_dist = distances[i - 1] if i < len(distances) else distances[-1]
+                next_dist = distances[i] if i < len(distances) else distances[-1]
+                if (prev_dist > max_threshold and next_dist > max_threshold):
+                    valid_indices.discard(i)
+
+            # 创建过滤后的检测列表
+            filtered_detections = [detections[i] for i in sorted(valid_indices)]
+        else:
+            filtered_detections = detections.copy()
+
+        # 如果没有有效检测框，返回空结果
+        if not filtered_detections:
+            return img, []
+
+        # 2. 判断图像方向（横向或纵向）
+        x_coords = [d['center'][0] for d in filtered_detections]
+        y_coords = [d['center'][1] for d in filtered_detections]
+        x_span = max(x_coords) - min(x_coords)
+        y_span = max(y_coords) - min(y_coords)
+        horizontal = x_span > y_span  # True表示横向，False表示纵向
+
+        # 3. 根据图像方向进行初步排序
+        if horizontal:
+            filtered_detections.sort(key=lambda x: x['center'][0])
+            print("检测到横向电阻，按X坐标排序")
+        else:
+            filtered_detections.sort(key=lambda x: x['center'][1])
+            print("检测到纵向电阻，按Y坐标排序")
+
+        # 4. 计算相邻色环的距离
+        distances = []
+        for i in range(len(filtered_detections) - 1):
+            x1, y1 = filtered_detections[i]['center']
+            x2, y2 = filtered_detections[i + 1]['center']
+            distance = np.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+            distances.append(distance)
+
+        # 5. 确定色环顺序
+        if len(distances) > 0:
+            # 找到最大间隔的位置
+            max_dist_idx = np.argmax(distances)
+
+            # 判断是顺序还是逆序情况
+            if max_dist_idx == 0:
+                # 最大间隔在最前面 - 顺序情况
+                ordered_detections = list(reversed(filtered_detections))
+                print("检测到顺序排列的色环")
+            elif max_dist_idx == len(distances) - 1:
+                # 最大间隔在最后面 - 逆序情况
+                ordered_detections = filtered_detections
+                print("检测到逆序排列的色环")
+            else:
+                # 其他情况（非常规排列）
+                ordered_detections = filtered_detections[max_dist_idx + 1:] + filtered_detections[:max_dist_idx + 1]
+                print("检测到非常规排列的色环，已尝试调整")
+        else:
+            ordered_detections = filtered_detections
+
+        # 6. 绘制检测框和标签
+        for det in ordered_detections:
+            x1, y1, x2, y2 = det['box']
+            color_name = det['color']
+            conf = det['conf']
+
+            # 绘制矩形框
+            cv2.rectangle(img, (x1, y1), (x2, y2), (0, 255, 0), 2)
+
+            # 绘制标签背景
+            label = f"{color_name} {conf:.2f}"
+            (w, h), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 1)
+            cv2.rectangle(img, (x1, y1 - 20), (x1 + w, y1), (0, 255, 0), -1)
+
+            # 绘制标签文本
+            cv2.putText(img, label, (x1, y1 - 5),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 0), 1)
+
+            color_info.append(color_name)
+
+        return img, color_info
+
+    # 新增色环检测函数
+    def detect_tht_colors(self, crop_img):
+        """对裁剪的电阻图像进行色环检测"""
+        try:
+            # 进行预测
+            results = self.tht_model.predict(crop_img)
+
+            # 获取处理后的颜色信息
+            _, color_info = self.plot_predictions(crop_img, results, self.COLOR_MAP)
+
+            return ", ".join(color_info) if color_info else "未识别到色环"
+        except Exception as e:
+            self.logger.log(f"色环检测失败: {str(e)}", "ERROR")
+            return "色环检测错误"
+
     def detect_image(self):
         """执行图像检测并显示结果"""
         if self.current_image is None:
@@ -213,15 +398,20 @@ class DetectionModePage1(QtWidgets.QWidget):
                 self.output_window.clear_results()
 
             # 执行YOLO检测
-            self.results = self.model(self.current_image, conf = 0.05)[0]
+            self.results = self.model(self.current_image, conf=0.05)[0]
             self.base_result_image = self.results.plot(line_width=2).copy()
 
             # 显示检测结果
             self.show_image(self.label_result, self.base_result_image)
 
+            # 清空并准备裁剪目录
+            default_dir = Path("CropResult").absolute()
+            shutil.rmtree(default_dir, ignore_errors=True)
+            default_dir.mkdir(parents=True, exist_ok=True)
+
             # 填充检测结果到输出窗口
             if self.output_window and self.results.boxes:
-                for idx, box in enumerate(self.results.boxes, start=1):
+                for i, box in enumerate(self.results.boxes):
                     xyxy = box.xyxy[0].cpu().numpy()
                     class_id = int(box.cls)
                     class_name = self.model.names[class_id]
@@ -229,11 +419,35 @@ class DetectionModePage1(QtWidgets.QWidget):
                     x_center = (xyxy[0] + xyxy[2]) / 2
                     y_center = (xyxy[1] + xyxy[3]) / 2
 
+                    # 裁剪处理逻辑
+                    x_min, y_min, x_max, y_max = map(int, xyxy)
+                    img_height, img_width = self.current_image.shape[:2]
+                    x_min = max(0, x_min)
+                    y_min = max(0, y_min)
+                    x_max = min(img_width, x_max)
+                    y_max = min(img_height, y_max)
+
+                    if x_min >= x_max or y_min >= y_max:
+                        continue
+
+                    # 执行裁剪
+                    crop_img = self.current_image[y_min:y_max, x_min:x_max]
+
+                    # 进行色环检测
+                    tht_color = self.detect_tht_colors(crop_img)
+
+                    # 填充结果到界面
                     self.output_window.add_detection_result(
                         (x_center, y_center),
                         class_name,
                         confidence,
+                        tht_color  # 传入色环检测结果
                     )
+
+                    # 保存裁剪图片
+                    # safe_class_name = class_name.replace(' ', '_')
+                    # filename = default_dir / f"crop_{i}_{safe_class_name}_{confidence:.2f}.jpg"
+                    # cv2.imwrite(str(filename), crop_img)
 
             self.logger.log("检测模式一图片检测完成", "SUCCESS")
 

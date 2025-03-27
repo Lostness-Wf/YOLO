@@ -223,20 +223,32 @@ def process_folder(input_folder, output_folder, model_path, colors):
 
 if __name__ == '__main__':
     # 颜色映射字典 {class_id: color_name}
+    # COLOR_MAP = {
+    #     0: "red",
+    #     1: "yellow",
+    #     2: "black",
+    #     3: "gold",
+    #     4: "orange",
+    #     5: "blue",
+    #     6: "brown",
+    #     7: "green",
+    #     8: "purple",
+    #     9: "white",
+    #     10: "gray"
+    # }
     COLOR_MAP = {
-        0: "red",
-        1: "yellow",
-        2: "black",
-        3: "gold",
-        4: "orange",
-        5: "blue",
-        6: "brown",
-        7: "green",
-        8: "purple",
-        9: "white",
-        10: "gray"
+        0: "红",
+        1: "黄",
+        2: "黑",
+        3: "金",
+        4: "橙",
+        5: "蓝",
+        6: "棕",
+        7: "绿",
+        8: "紫",
+        9: "白",
+        10: "灰"
     }
-
     # 模型路径
     MODEL_PATH = r'/Users/wfcy/Dev/PycharmProj/YOLOTrain/APP/Module/THTColorDetect/New/best.pt'  # 替换为你的模型路径
 
