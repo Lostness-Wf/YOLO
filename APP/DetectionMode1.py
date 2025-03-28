@@ -38,6 +38,11 @@ class DetectionModePage1(QtWidgets.QWidget):
             10: "灰"
         }
 
+        # 定义颜色配置
+        self.base_colors = ["黑", "棕", "红", "橙", "黄", "绿", "蓝", "紫", "灰", "白"]
+        self.multiplier_bands = ["黑", "棕", "红", "橙", "黄", "绿", "蓝", "金", "银"]
+        self.tolerance_bands = ["棕", "红", "绿", "金", "银"]
+
         self.init_default_dirs()
         self.setup_ui()
         self.setup_connections()
@@ -365,6 +370,56 @@ class DetectionModePage1(QtWidgets.QWidget):
             self.logger.log(f"色环检测失败: {str(e)}", "ERROR")
             return "色环检测错误"
 
+    def calculate_resistance_from_bands(self, color_bands):
+        """根据色环列表计算阻值"""
+        if not color_bands or len(color_bands) not in [4, 5]:
+            return "(阻值识别出错)"
+
+        try:
+            # 四环电阻处理
+            if len(color_bands) == 4:
+                # 验证颜色有效性
+                valid = (color_bands[0] in self.base_colors and
+                         color_bands[1] in self.base_colors and
+                         color_bands[2] in self.multiplier_bands and
+                         color_bands[3] in self.tolerance_bands)
+                if not valid:
+                    return "(阻值识别出错)"
+
+                # 计算阻值
+                base = self.base_colors.index(color_bands[0]) * 10 + self.base_colors.index(color_bands[1])
+                multiplier = 10 ** self.multiplier_bands.index(color_bands[2])
+                tolerance_idx = self.tolerance_bands.index(color_bands[3])
+                tolerance = ["±1%", "±2%", "±0.5%", "±5%", "±10%"][tolerance_idx]
+                resistance = base * multiplier
+
+            # 五环电阻处理
+            elif len(color_bands) == 5:
+                valid = (all(c in self.base_colors for c in color_bands[:3]) and
+                         color_bands[3] in self.multiplier_bands and
+                         color_bands[4] in self.tolerance_bands)
+                if not valid:
+                    return "(阻值识别出错)"
+
+                base = (self.base_colors.index(color_bands[0]) * 100 +
+                        self.base_colors.index(color_bands[1]) * 10 +
+                        self.base_colors.index(color_bands[2]))
+                multiplier = 10 ** self.multiplier_bands.index(color_bands[3])
+                tolerance_idx = self.tolerance_bands.index(color_bands[4])
+                tolerance = ["±1%", "±2%", "±0.5%", "±5%", "±10%"][tolerance_idx]
+                resistance = base * multiplier
+
+            # 单位转换
+            if resistance >= 1e6:
+                return f"({resistance / 1e6:.1f}MΩ {tolerance})"
+            elif resistance >= 1e3:
+                return f"({resistance / 1e3:.1f}KΩ {tolerance})"
+            else:
+                return f"({resistance:.1f}Ω {tolerance})"
+        except Exception as e:
+            self.logger.log(f"阻值计算错误: {str(e)}", "ERROR")
+            return "(阻值识别出错)"
+
     def detect_image(self):
         """执行图像检测并显示结果"""
         if self.current_image is None:
@@ -421,18 +476,26 @@ class DetectionModePage1(QtWidgets.QWidget):
                     # 进行色环检测
                     tht_color = self.detect_tht_colors(crop_img)
 
-                    # 填充结果到界面
+                    # 新增阻值计算
+                    if tht_color.startswith("未识别") or tht_color.startswith("错误"):
+                        resistance_info = "(阻值识别出错)"
+                    else:
+                        bands = tht_color.split()
+                        resistance_info = self.calculate_resistance_from_bands(bands)
+
+                    final_str = f"{tht_color} {resistance_info}"
+
                     self.output_window.add_detection_result(
                         (x_center, y_center),
                         class_name,
                         confidence,
-                        tht_color  # 传入色环检测结果
+                        final_str  # 传入合并后的结果
                     )
 
                     # 保存裁剪图片
-                    safe_class_name = class_name.replace(' ', '_')
-                    filename = default_dir / f"crop_{i}_{safe_class_name}_{confidence:.2f}.jpg"
-                    cv2.imwrite(str(filename), crop_img)
+                    # safe_class_name = class_name.replace(' ', '_')
+                    # filename = default_dir / f"crop_{i}_{safe_class_name}_{confidence:.2f}.jpg"
+                    # cv2.imwrite(str(filename), crop_img)
 
             self.logger.log("检测模式一图片检测完成", "SUCCESS")
 
