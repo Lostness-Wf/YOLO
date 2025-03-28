@@ -47,6 +47,10 @@ class OutputWindow(QtWidgets.QWidget):
         self.table.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeMode.Fixed)
         self.table.setColumnWidth(0, 100)
 
+        # 设置第二列宽度（“坐标“）
+        self.table.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeMode.Fixed)
+        self.table.setColumnWidth(1, 150)
+
         # 设置第三列宽度（“类名“）
         self.table.horizontalHeader().setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeMode.Fixed)
         self.table.setColumnWidth(2, 100)
@@ -56,8 +60,9 @@ class OutputWindow(QtWidgets.QWidget):
         self.table.setColumnWidth(3, 100)
 
         # 设置最后一列宽度（“电阻阻值“）
-        self.table.horizontalHeader().setSectionResizeMode(4, QtWidgets.QHeaderView.ResizeMode.Fixed)
-        self.table.setColumnWidth(4,  250)
+        self.table.horizontalHeader().setSectionResizeMode(4, QtWidgets.QHeaderView.ResizeMode.Stretch)
+        # self.table.horizontalHeader().setSectionResizeMode(4, QtWidgets.QHeaderView.ResizeMode.Fixed)
+        # self.table.setColumnWidth(4,  400)
 
         self.table.verticalHeader().setVisible(False)
         self.table.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)

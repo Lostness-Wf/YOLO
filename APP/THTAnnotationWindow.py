@@ -147,7 +147,7 @@ class AnnotationWindow(QtWidgets.QDialog):
         """执行YOLO检测并更新界面"""
         try:
             # 执行检测
-            self.results = self.model(self.original_image)[0]
+            self.results = self.model(self.original_image, conf=0.05)[0]
             self.draw_annotations()  # 初始化绘制
             self.update_table()
             self.load_annotations()  # 检测完成后加载配置

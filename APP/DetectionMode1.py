@@ -1,3 +1,5 @@
+import json
+
 import numpy as np
 from PySide6 import QtWidgets, QtCore, QtGui
 import cv2
@@ -21,6 +23,7 @@ class DetectionModePage1(QtWidgets.QWidget):
         self.logger = logger
         self.output_window = None
         self.cache_annotation = {}
+        self.image_path = None
 
         # 加载色环检测模型
         self.tht_model = YOLO(r'/Users/wfcy/Dev/PycharmProj/YOLOTrain/APP/Module/THTColorDetect/New/best.pt')
@@ -54,6 +57,15 @@ class DetectionModePage1(QtWidgets.QWidget):
         Path("Module").mkdir(parents=True, exist_ok=True)
         Path("CropResult").mkdir(parents=True, exist_ok=True)
         Path("THTColorDetectResult").mkdir(parents=True, exist_ok=True)
+        Path("AnnotationConfig").mkdir(parents=True, exist_ok=True)
+
+    def get_config_path_for_current_image(self):
+        """生成当前图片对应的配置文件路径"""
+        if not self.image_path:
+            return None
+        image_path = Path(self.image_path)
+        config_dir = Path("AnnotationConfig")
+        return config_dir / f"{image_path.stem}_config.json"
 
     def set_output_window(self, output_window):
         """设置输出窗口引用"""
@@ -373,7 +385,7 @@ class DetectionModePage1(QtWidgets.QWidget):
     def calculate_resistance_from_bands(self, color_bands):
         """根据色环列表计算阻值"""
         if not color_bands or len(color_bands) not in [4, 5]:
-            return "(阻值识别出错)"
+            return "(色环数量错误)"
 
         try:
             # 四环电阻处理
@@ -384,7 +396,7 @@ class DetectionModePage1(QtWidgets.QWidget):
                          color_bands[2] in self.multiplier_bands and
                          color_bands[3] in self.tolerance_bands)
                 if not valid:
-                    return "(阻值识别出错)"
+                    return "(色环类型错误)"
 
                 # 计算阻值
                 base = self.base_colors.index(color_bands[0]) * 10 + self.base_colors.index(color_bands[1])
@@ -399,7 +411,7 @@ class DetectionModePage1(QtWidgets.QWidget):
                          color_bands[3] in self.multiplier_bands and
                          color_bands[4] in self.tolerance_bands)
                 if not valid:
-                    return "(阻值识别出错)"
+                    return "(色环类型错误)"
 
                 base = (self.base_colors.index(color_bands[0]) * 100 +
                         self.base_colors.index(color_bands[1]) * 10 +
@@ -418,7 +430,7 @@ class DetectionModePage1(QtWidgets.QWidget):
                 return f"({resistance:.1f}Ω {tolerance})"
         except Exception as e:
             self.logger.log(f"阻值计算错误: {str(e)}", "ERROR")
-            return "(阻值识别出错)"
+            return "(错误)"
 
     def detect_image(self):
         """执行图像检测并显示结果"""
@@ -476,14 +488,34 @@ class DetectionModePage1(QtWidgets.QWidget):
                     # 进行色环检测
                     tht_color = self.detect_tht_colors(crop_img)
 
-                    # 新增阻值计算
+                    # 检测到色环与 JSON 比对逻辑
+                    config_path = self.get_config_path_for_current_image()
+                    comparison_info = ""
+                    if config_path and config_path.exists():
+                        try:
+                            with open(config_path, 'r', encoding='utf-8') as f:
+                                config_data = json.load(f)
+                                resistor_id = str(i + 1)
+                                if resistor_id in config_data:
+                                    correct_colors = [c for c in config_data[resistor_id]["colors"] if c]
+                                    detected_colors = tht_color.split()
+                                    if detected_colors == correct_colors:
+                                        comparison_info = " ✔"
+                                    else:
+                                        expected = " ".join(correct_colors)
+                                        detected = " ".join(detected_colors) if detected_colors else "无"
+                                        comparison_info = f" ✘ (预期: {expected}, 检测: {detected})"
+                        except Exception as e:
+                            self.logger.log(f"配置文件读取失败: {str(e)}", "ERROR")
+
+                    # 阻值计算
                     if tht_color.startswith("未识别") or tht_color.startswith("错误"):
-                        resistance_info = "(阻值识别出错)"
+                        resistance_info = "(色环识别出错)"
                     else:
                         bands = tht_color.split()
                         resistance_info = self.calculate_resistance_from_bands(bands)
 
-                    final_str = f"{tht_color} {resistance_info}"
+                    final_str = f"{tht_color} {resistance_info} {comparison_info}"
 
                     self.output_window.add_detection_result(
                         (x_center, y_center),
@@ -566,6 +598,7 @@ class DetectionModePage1(QtWidgets.QWidget):
 
         if file_path:
             try:
+                self.image_path = file_path  # 新增：保存完整路径
                 # 清空所有检测相关状态
                 self.results = None
                 self.base_result_image = None
